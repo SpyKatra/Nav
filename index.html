@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"></head><body>
+<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#0b141c"><link rel="manifest" href="manifest.webmanifest"><link rel="apple-touch-icon" href="icon-180.png"><link rel="icon" type="image/png" href="icon-192.png"></head><body>
 <title>Plan Vol</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -774,6 +774,7 @@ pre.code{font:11px "B612 Mono",monospace;background:var(--panel);border:1px soli
     <h1>Plan Vol</h1>
     <p class="sub">Prépare ton vol en cinq étapes.</p>
   </header>
+  <p class="warnbox" id="offBanner" hidden>Hors ligne : la météo et les fonds de carte non enregistrés ne sont pas disponibles. Les calculs, la carte de base et le PDF fonctionnent.</p>
 
   <nav class="steps" id="steps" aria-label="Étapes">
     <button type="button" data-s="1"><b>1</b>Avion</button>
@@ -808,7 +809,9 @@ pre.code{font:11px "B612 Mono",monospace;background:var(--panel);border:1px soli
       <div class="tools">
         <button class="btn on" id="addMode" type="button" aria-pressed="true">Toucher la carte ajoute un point</button>
         <button class="btn" id="fit" type="button">Cadrer la route</button>
+        <button class="btn" id="tileSave" type="button">Enregistrer cette zone hors ligne</button>
       </div>
+      <p class="note" id="tileMsg" hidden></p>
       <div id="map" class="adding" role="application" aria-label="Carte de la route"></div>
       <p class="note bad" id="mapNote" hidden>Le fond de carte n’est pas disponible dans cette page. Les points, les aéroports et les calculs fonctionnent. Pour voir la vraie carte, ouvre le fichier mis en ligne en https.</p>
       <p class="note">Les ronds bleus sont des aéroports : touche-les pour les ajouter. Touche un tronçon pour y insérer un point. Glisse un numéro pour le déplacer.</p>
@@ -2145,6 +2148,35 @@ function exportPdf(){
   }catch(e){m.textContent="Impossible de générer le PDF dans ce navigateur : utilise « Imprimer ».";m.hidden=false}
 }
 
+
+/* ---------- Hors ligne ---------- */
+function offUi(){$("offBanner").hidden=navigator.onLine!==false}
+window.addEventListener("online",offUi);window.addEventListener("offline",offUi);offUi();
+function tileUrls(){
+  var b=map.getBounds(),z0=Math.round(map.getZoom()),urls=[],z,x,y,x0,x1,y0,y1;
+  function tx(lo,zz){return Math.floor((lo+180)/360*Math.pow(2,zz))}
+  function ty(la,zz){var r=rad(la);return Math.floor((1-Math.log(Math.tan(r)+1/Math.cos(r))/Math.PI)/2*Math.pow(2,zz))}
+  for(z=z0;z<=Math.min(z0+2,13);z++){
+    x0=tx(b.getWest(),z);x1=tx(b.getEast(),z);y0=ty(b.getNorth(),z);y1=ty(b.getSouth(),z);
+    for(x=x0;x<=x1;x++)for(y=y0;y<=y1;y++)urls.push("https://tile.openstreetmap.org/"+z+"/"+x+"/"+y+".png");
+  }
+  return urls;
+}
+async function saveTiles(){
+  var m=$("tileMsg");m.hidden=false;
+  if(!("serviceWorker" in navigator)||!navigator.serviceWorker.controller){m.textContent="Disponible dans la version installée : ouvre la version hébergée en https, recharge la page une fois, puis réessaie.";return}
+  if(navigator.onLine===false){m.textContent="Pas de réseau pour le moment.";return}
+  var urls=tileUrls();
+  if(urls.length>250){m.textContent="Zone trop grande ("+urls.length+" tuiles). Zoome sur la zone voulue : 250 tuiles au maximum, pour rester raisonnable avec le serveur d’OpenStreetMap.";return}
+  var done=0,fail=0,i;
+  for(i=0;i<urls.length;i+=4){
+    await Promise.all(urls.slice(i,i+4).map(function(u){return fetch(u,{mode:"no-cors"}).then(function(){done++},function(){fail++})}));
+    m.textContent="Enregistrement : "+(done+fail)+" / "+urls.length+" tuiles…";
+  }
+  m.textContent="Zone enregistrée pour le hors-ligne : "+done+" tuiles (zoom "+Math.round(map.getZoom())+" à "+Math.min(Math.round(map.getZoom())+2,13)+")."+(fail?" "+fail+" échecs.":"");
+}
+$("tileSave").onclick=saveTiles;
+
 /* ---------- OpenAIP ---------- */
 var OAIP="planvol_oaip",oaipLayer=null,oaipOk=0,oaipEr=0,oaipKeyNow="";
 function oaipStatus(){
@@ -2203,4 +2235,5 @@ syncInputs();renderPoints();refresh();drawApts();drawGrid();
 showStep(1);
 </script>
 
+<script>try{if("serviceWorker" in navigator&&location.protocol!=="file:")window.addEventListener("load",function(){navigator.serviceWorker.register("sw.js").catch(function(){})})}catch(e){}</script>
 </body></html>

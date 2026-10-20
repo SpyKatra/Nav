@@ -1,0 +1,17 @@
+{
+  "name": "Plan Vol",
+  "short_name": "Plan Vol",
+  "description": "Préparation de vol : route, carburant, masse et centrage, performances et météo.",
+  "lang": "fr-CA",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#0b141c",
+  "theme_color": "#0b141c",
+  "icons": [
+    {"src": "icon-192.png", "sizes": "192x192", "type": "image/png"},
+    {"src": "icon-512.png", "sizes": "512x512", "type": "image/png"},
+    {"src": "icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable"}
+  ]
+}
