@@ -727,6 +727,12 @@ input:focus-visible,button:focus-visible,summary:focus-visible{outline:2px solid
 .lg .cell .v{font-size:16px}
 .wind{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px;max-width:320px}
 .warnbox{border-left:3px solid var(--amber);padding:8px 12px;font-size:13px;color:var(--mute);background:var(--panel)}
+.oaip{margin-top:10px;border:1px solid var(--line);border-radius:10px;padding:10px;background:var(--field)}
+.oaip>summary{cursor:pointer;font-size:14px;font-weight:700}
+.oaip[open]>summary{margin-bottom:6px}
+.oaip a{color:var(--cyan)}
+.chk{display:flex;align-items:center;gap:6px;font-size:14px;color:var(--ink);margin:0}
+.chk input{width:18px;height:18px}
 textarea{width:100%;min-height:140px;font:12px "B612 Mono",monospace;background:var(--field);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:8px}
 [hidden]{display:none!important}
 </style>
@@ -763,6 +769,19 @@ textarea{width:100%;min-height:140px;font:12px "B612 Mono",monospace;background:
     <div id="map" class="adding" role="application" aria-label="Carte de la route"></div>
     <p class="note bad" id="mapNote" hidden>Le fond de carte n’est pas disponible dans cette page. Les points, les aéroports et les calculs fonctionnent. Pour voir la vraie carte, ouvre le fichier mis en ligne en https.</p>
     <p class="note">Les ronds bleus sont des aéroports : touche-les pour les ajouter. Touche un tronçon pour y insérer un point. Glisse un numéro pour le déplacer.</p>
+    <details class="oaip">
+      <summary>Couches aéronautiques (OpenAIP)</summary>
+      <p class="note">Affiche les espaces aériens et les aéroports en données ouvertes par-dessus la carte. Il faut une clé gratuite : crée un compte sur <a href="https://www.openaip.net" target="_blank" rel="noopener">openaip.net</a>, ouvre « API Clients » dans ton profil, crée un client et copie le jeton. La clé reste dans ton navigateur.</p>
+      <label for="oaipKey">Clé OpenAIP</label>
+      <input id="oaipKey" type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Colle ton jeton ici">
+      <div class="tools" style="margin-top:8px;margin-bottom:0">
+        <label class="chk"><input type="checkbox" id="oaip_airspaces" checked> Espaces aériens</label>
+        <label class="chk"><input type="checkbox" id="oaip_airports" checked> Aéroports</label>
+        <button class="btn" id="oaipGo" type="button">Afficher</button>
+      </div>
+      <p class="note" id="oaipMsg" hidden></p>
+      <p class="note">Données communautaires, parfois incomplètes ou périmées. Ce n’est pas une carte VNC : vérifie les espaces aériens et les NOTAM dans les publications officielles.</p>
+    </details>
     <div class="addrow">
       <div><label for="addIn">Ajouter par code ou coordonnées</label><input id="addIn" type="text" placeholder="CYRQ ou 46.35/-72.68" autocapitalize="characters" autocomplete="off" autocorrect="off" spellcheck="false"></div>
       <button class="btn" id="addBtn" type="button" style="align-self:end;height:42px">Ajouter</button>
@@ -808,6 +827,7 @@ textarea{width:100%;min-height:140px;font:12px "B612 Mono",monospace;background:
 </script>
 <script>
 var AIRCRAFT=[
+ {n:"Diamond DA20-C1",c:115,b:7,f:24},
  {n:"Cessna 172S",c:110,b:9,f:53},
  {n:"Piper PA-28 Archer",c:120,b:10,f:48},
  {n:"Diamond DA40",c:120,b:9.5,f:40},
@@ -836,7 +856,7 @@ var S={ac:0,cruise:110,burn:9,fuel:53,taxi:1,res:45,wd:0,ws:0,decl:14,dep:"",exa
 var addMode=true,clearArmed=false,clearTimer=null;
 
 function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
-function loadSaved(){try{var j=localStorage.getItem(KEY);if(j){var o=JSON.parse(j);if(o&&o.pts&&o.pts.length>=0&&typeof o.cruise==="number")S=o}}catch(e){}}
+function loadSaved(){try{var j=localStorage.getItem(KEY);if(j){var o=JSON.parse(j);if(o&&o.pts&&o.pts.length>=0&&typeof o.cruise==="number"){S=o;if(S.acn){for(var q=0;q<AIRCRAFT.length;q++)if(AIRCRAFT[q].n===S.acn)S.ac=q}else S.ac=Math.min(S.ac+1,AIRCRAFT.length-1)}}}catch(e){}}
 function esc(s){return String(s).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]})}
 function rad(x){return x*Math.PI/180}
 function dist(a,b,c,d){var p=rad(c-a),q=rad(d-b),h=Math.sin(p/2)*Math.sin(p/2)+Math.cos(rad(a))*Math.cos(rad(c))*Math.sin(q/2)*Math.sin(q/2);return 2*3440.065*Math.asin(Math.min(1,Math.sqrt(h)))}
@@ -877,7 +897,7 @@ function syncInputs(){
 AIRCRAFT.forEach(function(a,i){
   var b=document.createElement("button");b.type="button";
   b.innerHTML="<b>"+esc(a.n)+"</b><span>"+a.c+" kt · "+a.b+" gal/h</span>";
-  b.onclick=function(){S.ac=i;S.cruise=a.c;S.burn=a.b;S.fuel=a.f;syncInputs();refresh()};
+  b.onclick=function(){S.ac=i;S.acn=a.n;S.cruise=a.c;S.burn=a.b;S.fuel=a.f;syncInputs();refresh()};
   $("acList").appendChild(b);
 });
 ["cruise","burn","fuel","taxi","res","wd","ws","decl"].forEach(function(k){
@@ -1101,6 +1121,27 @@ function fitRoute(){
   else if(S.pts.length===1)map.setView([S.pts[0].la,S.pts[0].lo],9);
 }
 $("fit").onclick=fitRoute;
+
+/* ---------- OpenAIP ---------- */
+var OAIP="planvol_oaip",oaipLayers={};
+function setOaip(){
+  var k=$("oaipKey").value.trim(),msg=$("oaipMsg"),shown=0;
+  try{localStorage.setItem(OAIP,k)}catch(e){}
+  ["airspaces","airports"].forEach(function(n){
+    if(oaipLayers[n]){map.removeLayer(oaipLayers[n]);oaipLayers[n]=null}
+    if(k&&$("oaip_"+n).checked){
+      var ok=0,er=0,lay=L.tileLayer("https://{s}.api.tiles.openaip.net/api/data/"+n+"/{z}/{x}/{y}.png?apiKey="+encodeURIComponent(k),{subdomains:"0123",maxZoom:15,opacity:.85,attribution:"© openAIP"});
+      lay.on("tileload",function(){ok++;msg.hidden=true});
+      lay.on("tileerror",function(){er++;if(ok===0&&er>=3){msg.textContent="Les tuiles OpenAIP ne répondent pas. Vérifie la clé, ta connexion, ou ouvre la version hébergée en https.";msg.hidden=false}});
+      lay.addTo(map);oaipLayers[n]=lay;shown++;
+    }
+  });
+  if(!k){msg.textContent="Colle ta clé OpenAIP pour afficher les couches.";msg.hidden=false}
+  else if(!shown){msg.textContent="Coche au moins une couche.";msg.hidden=false}
+  else msg.hidden=true;
+}
+$("oaipGo").onclick=setOaip;
+try{var sk=localStorage.getItem(OAIP);if(sk){$("oaipKey").value=sk;setOaip()}}catch(e){}
 
 /* ---------- Mise à jour ---------- */
 function refresh(){
