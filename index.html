@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Nav Vol">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Nav Vol</title>
+<!-- v2 : route multi-points, vent, déclinaison magnétique, aéroports, nuit rouge -->
+
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=B612:wght@400;700&family=B612+Mono:wght@400;700&display=swap">
+<style>
+:root{--bg:#eef2f5;--panel:#fff;--ink:#0e1a24;--mute:#5b6b78;--line:#cfd8df;--amber:#a85d00;--cyan:#006f8a;--bad:#b3261e;--ok:#1b7a3a;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0b141c;--panel:#13222e;--ink:#e8eef2;--mute:#8fa3b2;--line:#27394a;--amber:#ffb000;--cyan:#5fd0e8;--bad:#ff6b5e;--ok:#5fe08a}}
+:root[data-theme="dark"]{--bg:#0b141c;--panel:#13222e;--ink:#e8eef2;--mute:#8fa3b2;--line:#27394a;--amber:#ffb000;--cyan:#5fd0e8;--bad:#ff6b5e;--ok:#5fe08a}
+:root.night{--bg:#000;--panel:#120000;--ink:#ff4b3a;--mute:#a8362b;--line:#4a1008;--amber:#ff3b2a;--cyan:#ff6a55;--bad:#ff9a8a;--ok:#ff6a55}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"B612",system-ui,sans-serif;line-height:1.4}
+main{max-width:560px;margin:0 auto;padding:16px}
+.top{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}
+.brand{font-size:13px;color:var(--mute)}
+.mini{font:inherit;font-size:13px;color:var(--ink);background:transparent;border:1px solid var(--line);border-radius:8px;padding:6px 10px;cursor:pointer}
+h1{font-size:22px;margin:4px 0 2px}
+h2{font-size:15px;margin:20px 0 8px;color:var(--mute);font-weight:400}
+.sub{color:var(--mute);font-size:14px;margin:0 0 8px}
+.warn{border-left:3px solid var(--amber);padding:8px 12px;font-size:13px;color:var(--mute);background:var(--panel);margin:12px 0}
+.ac{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.ac button{text-align:left;background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:12px;font:inherit;cursor:pointer;min-height:64px}
+.ac button b{display:block;font-size:15px}
+.ac button span{font-size:12px;color:var(--mute)}
+.ac button[aria-pressed="true"]{border:2px solid var(--amber);padding:11px}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+label{display:block;font-size:12px;color:var(--mute);margin-bottom:2px}
+input{width:100%;font:inherit;font-family:"B612 Mono",monospace;font-size:16px;padding:10px;border-radius:8px;border:1px solid var(--line);background:var(--panel);color:var(--ink)}
+.go,.ghost{width:100%;font:inherit;font-size:17px;font-weight:700;padding:14px;border-radius:10px;border:0;margin-top:16px;cursor:pointer}
+.go{background:var(--amber);color:#111}
+:root.night .go{color:#000}
+.ghost{background:transparent;color:var(--ink);border:1px solid var(--line);font-weight:400;font-size:15px}
+.hdr{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.tag{font-size:13px;color:var(--cyan)}
+.hero{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px;margin-top:10px;display:grid;grid-template-columns:140px 1fr;gap:12px;align-items:center}
+.big{font-family:"B612 Mono",monospace;font-weight:700;color:var(--amber);font-size:34px;line-height:1.1}
+.lbl{font-size:12px;color:var(--mute)}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}
+.cell{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px}
+.cell .v{font-family:"B612 Mono",monospace;font-weight:700;font-size:20px}
+.bad{color:var(--bad)}.ok{color:var(--ok)}
+#msg{font-size:14px;margin-top:10px;min-height:20px}
+.hide{display:none}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.chip{font-family:"B612 Mono",monospace;font-size:13px;padding:4px 8px;border-radius:6px;border:1px solid var(--line);background:var(--panel);color:var(--cyan)}
+.chip.err{color:var(--bad);border-color:var(--bad)}
+button.chip{cursor:pointer}
+details{margin-top:8px}
+summary{font-size:13px;color:var(--mute);cursor:pointer}
+.help{font-size:12px;color:var(--mute);margin:6px 0 0}
+</style>
+</head>
+<body>
+<main>
+
+<div class="top"><span class="brand">Nav Vol</span><button class="mini" id="night" type="button">Nuit rouge</button></div>
+
+<section id="setup">
+  <h1>Nouveau vol</h1>
+  <p class="sub">Choisis l’avion que tu pilotes avant de partir.</p>
+  <div class="ac" id="acList" role="group" aria-label="Avion"></div>
+
+  <h2>Performances de l’avion</h2>
+  <div class="row">
+    <div><label for="cruise">Vitesse de croisière (kt, vraie)</label><input id="cruise" type="number" inputmode="decimal"></div>
+    <div><label for="burn">Consommation (gal US/h)</label><input id="burn" type="number" inputmode="decimal" step="0.1"></div>
+  </div>
+
+  <h2>Route</h2>
+  <label for="route">Points dans l’ordre, séparés par des espaces</label>
+  <input id="route" type="text" placeholder="CYQB CYRQ CYUL" autocapitalize="characters" autocomplete="off" autocorrect="off" spellcheck="false">
+  <div class="chips" id="chips"></div>
+  <p class="help" id="routeInfo">Utilise un code OACI ou des coordonnées au format 46.5/-72.1 (latitude/longitude).</p>
+  <details>
+    <summary>Aéroports connus (touche pour ajouter)</summary>
+    <div class="chips" id="aptList"></div>
+  </details>
+
+  <label for="from" style="margin-top:12px">Position de départ (facultatif, si le GPS est bloqué)</label>
+  <input id="from" type="text" placeholder="CYRQ ou 46.35/-72.68" autocapitalize="characters" autocomplete="off" autocorrect="off" spellcheck="false">
+
+  <h2>Vent et magnétisme</h2>
+  <div class="row3">
+    <div><label for="wd">Vent venant de (° vrais)</label><input id="wd" type="number" inputmode="decimal" value="0"></div>
+    <div><label for="ws">Vitesse du vent (kt)</label><input id="ws" type="number" inputmode="decimal" value="0"></div>
+    <div><label for="decl">Déclinaison (° ouest)</label><input id="decl" type="number" inputmode="decimal" value="14"></div>
+  </div>
+  <p class="help">Les caps affichés sont magnétiques. Vérifie la déclinaison de ta région sur la carte.</p>
+
+  <h2>Carburant</h2>
+  <label for="fuel">Carburant à bord (gal US)</label>
+  <input id="fuel" type="number" inputmode="decimal" step="0.1">
+
+  <button class="go" id="start">Démarrer le vol</button>
+  <p class="warn">Outil d’aide uniquement. Vérifie les valeurs dans le manuel de vol de ton appareil. Ne remplace ni les cartes, ni les instruments, ni la planification officielle.</p>
+</section>
+
+<section id="fly" class="hide">
+  <div class="hdr">
+    <div><h1 id="acName"></h1><div class="tag" id="wpName"></div></div>
+    <button class="ghost" id="end" style="width:auto;margin:0;padding:10px 14px">Terminer</button>
+  </div>
+
+  <div class="hero">
+    <svg id="arrow" viewBox="-70 -70 140 140" width="140" height="140" aria-label="Direction vers le prochain point">
+      <circle r="64" fill="none" stroke="var(--line)" stroke-width="2"/>
+      <path d="M0-4V-62M-4 4H4" stroke="var(--line)" stroke-width="2"/>
+      <g id="needle"><path d="M0-54L14 26L0 14L-14 26Z" fill="var(--amber)"/></g>
+    </svg>
+    <div>
+      <div class="lbl">Distance au prochain point</div>
+      <div class="big" id="dist">--</div>
+      <div class="lbl" style="margin-top:6px">Cap à suivre (magnétique)</div>
+      <div class="big" style="color:var(--cyan);font-size:26px" id="brg">--</div>
+    </div>
+  </div>
+  <button class="ghost" id="nextWp" style="margin-top:10px;padding:10px">Point suivant</button>
+
+  <div class="grid">
+    <div class="cell"><div class="lbl">Vitesse sol</div><div class="v" id="gs">--</div></div>
+    <div class="cell"><div class="lbl">Route sol (mag.)</div><div class="v" id="trk">--</div></div>
+    <div class="cell"><div class="lbl">Altitude GPS</div><div class="v" id="alt">--</div></div>
+    <div class="cell"><div class="lbl">Temps au point</div><div class="v" id="eteN">--</div></div>
+    <div class="cell"><div class="lbl">Distance totale</div><div class="v" id="distT">--</div></div>
+    <div class="cell"><div class="lbl">Temps total</div><div class="v" id="eteT">--</div></div>
+    <div class="cell"><div class="lbl">Arrivée</div><div class="v" id="eta">--</div></div>
+    <div class="cell"><div class="lbl">Vent sur la route</div><div class="v" id="hw">--</div></div>
+    <div class="cell"><div class="lbl">Vent traversier</div><div class="v" id="xw">--</div></div>
+    <div class="cell"><div class="lbl">Correction de dérive</div><div class="v" id="wca">--</div></div>
+    <div class="cell"><div class="lbl">Autonomie</div><div class="v" id="endu">--</div></div>
+    <div class="cell"><div class="lbl">Carburant estimé</div><div class="v" id="fuelNow">--</div></div>
+    <div class="cell" style="grid-column:span 3"><div class="lbl">Carburant à l’arrivée (réserve de 45 min)</div><div class="v" id="fuelArr">--</div></div>
+  </div>
+  <div id="msg"></div>
+  <div id="manual" style="margin-top:10px">
+    <label for="pos">Position manuelle (code OACI ou lat/lon)</label>
+    <div class="row" style="grid-template-columns:1fr auto">
+      <input id="pos" type="text" placeholder="CYRQ ou 46.35/-72.68" autocapitalize="characters" autocomplete="off" autocorrect="off" spellcheck="false">
+      <button class="mini" id="setPos" type="button">Appliquer</button>
+    </div>
+  </div>
+  <p class="warn">Le carburant et le vent sont des estimations basées sur les valeurs entrées. Surveille les jauges réelles et mets le vent à jour en route.</p>
+</section>
+
+</main>
+<script>
+var AIRCRAFT=[
+ {n:"Cessna 172S",c:110,b:9,f:53},
+ {n:"Piper PA-28 Archer",c:120,b:10,f:48},
+ {n:"Diamond DA40",c:120,b:9.5,f:40},
+ {n:"Cirrus SR22",c:165,b:17,f:81},
+ {n:"Cessna 208 Caravan",c:170,b:58,f:335},
+ {n:"Beechcraft Baron 58",c:190,b:30,f:166},
+ {n:"Autre appareil",c:100,b:10,f:40}
+];
+var APT={
+ CYQB:[46.7911,-71.3933,"Québec"],CYUL:[45.4706,-73.7408,"Montréal-Trudeau"],CYHU:[45.5175,-73.4169,"Saint-Hubert"],
+ CYMX:[45.6795,-74.0387,"Mirabel"],CYJN:[45.2944,-73.2814,"Saint-Jean"],CYRQ:[46.3528,-72.6794,"Trois-Rivières"],
+ CYSC:[45.4386,-71.6914,"Sherbrooke"],CYND:[45.5217,-75.5636,"Gatineau"],CYOW:[45.3225,-75.6692,"Ottawa"],
+ CYBG:[48.3306,-70.9964,"Bagotville"],CYRJ:[48.5200,-72.2656,"Roberval"],CYMT:[49.7719,-74.5272,"Chibougamau"],
+ CYVO:[48.0533,-77.7828,"Val-d’Or"],CYUY:[48.2061,-78.8356,"Rouyn-Noranda"],CYRI:[47.7644,-69.5847,"Rivière-du-Loup"],
+ CYBC:[49.1325,-68.2044,"Baie-Comeau"],CYZV:[50.2233,-66.2656,"Sept-Îles"],CYGP:[48.7753,-64.4786,"Gaspé"],
+ CYGV:[50.2819,-63.6114,"Havre-Saint-Pierre"],CYNA:[50.1900,-61.7900,"Natashquan"],
+ CYGK:[44.2253,-76.5969,"Kingston"],CYTR:[44.1189,-77.5281,"Trenton"],CYTZ:[43.6275,-79.3961,"Toronto Billy Bishop"],
+ CYYZ:[43.6772,-79.6306,"Toronto Pearson"],CYKF:[43.4608,-80.3786,"Waterloo"],CYSB:[46.6250,-80.7989,"Sudbury"],
+ CYAM:[46.4850,-84.5094,"Sault-Sainte-Marie"],CYFC:[45.8689,-66.5372,"Fredericton"],CYQM:[46.1122,-64.6786,"Moncton"],
+ CYHZ:[44.8808,-63.5086,"Halifax"],CYYG:[46.2900,-63.1211,"Charlottetown"],CYYT:[47.6186,-52.7519,"Saint-Jean T.-N."]
+};
+var $=function(i){return document.getElementById(i)};
+var sel=0,route=[],idx=0,watch=null,fuel0=0,t0=0,burn=0,cruise=0,wd=0,ws=0,decl=0,last=null;
+
+function store(k,v){try{localStorage.setItem(k,v)}catch(e){}}
+function load(k){try{return localStorage.getItem(k)}catch(e){return null}}
+
+/* Mode nuit rouge */
+function setNight(on){document.documentElement.classList.toggle("night",on);$("night").textContent=on?"Mode jour":"Nuit rouge";store("navvol_night",on?"1":"0")}
+$("night").onclick=function(){setNight(!document.documentElement.classList.contains("night"))};
+if(load("navvol_night")==="1")setNight(true);
+
+/* Avions */
+function pick(i){
+  sel=i;var a=AIRCRAFT[i];
+  Array.prototype.forEach.call($("acList").children,function(b,j){b.setAttribute("aria-pressed",j===i?"true":"false")});
+  $("cruise").value=a.c;$("burn").value=a.b;$("fuel").value=a.f;
+}
+AIRCRAFT.forEach(function(a,i){
+  var b=document.createElement("button");
+  b.innerHTML="<b>"+a.n+"</b><span>"+a.c+" kt · "+a.b+" gal/h</span>";
+  b.onclick=function(){pick(i)};
+  $("acList").appendChild(b);
+});
+var saved=parseInt(load("navvol_ac"),10);
+pick(isNaN(saved)||saved<0||saved>=AIRCRAFT.length?0:saved);
+
+/* Route */
+function mkChip(txt,cls,tag){var e=document.createElement(tag||"span");e.className="chip"+(cls?" "+cls:"");e.textContent=txt;return e}
+Object.keys(APT).sort().forEach(function(k){
+  var b=mkChip(k,"","button");b.type="button";b.title=APT[k][2];
+  b.onclick=function(){var r=$("route");r.value=(r.value.trim()+" "+k).trim();updateRoute()};
+  $("aptList").appendChild(b);
+});
+function parseRoute(text){
+  var pts=[],bad=[];
+  text.toUpperCase().split(/\s+/).filter(Boolean).forEach(function(t){
+    var m=t.match(/^(-?\d+(?:\.\d+)?)\/(-?\d+(?:\.\d+)?)$/);
+    if(APT[t])pts.push({n:t,la:APT[t][0],lo:APT[t][1],d:t+" "+APT[t][2]});
+    else if(m&&Math.abs(+m[1])<=90&&Math.abs(+m[2])<=180)pts.push({n:t,la:+m[1],lo:+m[2],d:t});
+    else bad.push(t);
+  });
+  return {pts:pts,bad:bad};
+}
+function updateRoute(){
+  var r=parseRoute($("route").value),box=$("chips"),tot=0;
+  box.innerHTML="";
+  r.pts.forEach(function(p){box.appendChild(mkChip(p.d))});
+  r.bad.forEach(function(t){box.appendChild(mkChip("Inconnu : "+t,"err"))});
+  for(var i=0;i<r.pts.length-1;i++)tot+=dist(r.pts[i].la,r.pts[i].lo,r.pts[i+1].la,r.pts[i+1].lo);
+  $("routeInfo").textContent=r.pts.length>1?"Distance entre les points : "+tot.toFixed(0)+" NM":"Utilise un code OACI ou des coordonnées au format 46.5/-72.1 (latitude/longitude).";
+}
+$("route").addEventListener("input",updateRoute);
+
+/* Calculs */
+function rad(x){return x*Math.PI/180}
+function dist(a,b,c,d){var p=rad(c-a),q=rad(d-b),h=Math.sin(p/2)*Math.sin(p/2)+Math.cos(rad(a))*Math.cos(rad(c))*Math.sin(q/2)*Math.sin(q/2);return 2*3440.065*Math.asin(Math.sqrt(h))}
+function bearing(a,b,c,d){var y=Math.sin(rad(d-b))*Math.cos(rad(c)),x=Math.cos(rad(a))*Math.sin(rad(c))-Math.sin(rad(a))*Math.cos(rad(c))*Math.cos(rad(d-b));return (Math.atan2(y,x)*180/Math.PI+360)%360}
+function hm(h){if(!isFinite(h)||h<0)return "--";var m=Math.round(h*60);return Math.floor(m/60)+" h "+("0"+(m%60)).slice(-2)}
+function deg(x){var n=Math.round(((x%360)+360)%360)%360;return ("00"+n).slice(-3)+"°"}
+function mag(x){return x+decl}
+function windCalc(course,tas,wdir,wspd){
+  var a=rad(wdir-course),s=wspd*Math.sin(a)/tas;
+  if(Math.abs(s)>=1)return {th:course,gs:Math.max(tas,20),hw:0,xw:0,wca:0};
+  var w=Math.asin(s),gs=Math.max(tas*Math.cos(w)-wspd*Math.cos(a),20);
+  return {th:(course+w*180/Math.PI+360)%360,gs:gs,hw:wspd*Math.cos(a),xw:wspd*Math.sin(a),wca:w*180/Math.PI};
+}
+
+/* Vol */
+$("start").onclick=function(){
+  cruise=+$("cruise").value;burn=+$("burn").value;fuel0=+$("fuel").value;
+  wd=+$("wd").value||0;ws=+$("ws").value||0;decl=+$("decl").value||0;
+  if(!(cruise>0&&burn>0&&fuel0>=0)){alert("Vérifie la vitesse, la consommation et le carburant.");return}
+  if(ws<0||wd<0||wd>360){alert("Vérifie la direction et la vitesse du vent.");return}
+  var r=parseRoute($("route").value);
+  if(r.bad.length){alert("Point inconnu dans la route : "+r.bad.join(", "));return}
+  route=r.pts;idx=0;
+  store("navvol_ac",sel);
+  $("acName").textContent=AIRCRAFT[sel].n;
+  $("setup").classList.add("hide");$("fly").classList.remove("hide");
+  t0=Date.now();last=null;
+  if($("from").value.trim()){$("pos").value=$("from").value;setManual($("from").value)}
+  render();
+  var blocked="Le GPS est bloqué dans cette page (l’aperçu de l’appli n’y a pas accès). Entre ta position manuellement ci-dessous.";
+  if(!navigator.geolocation){$("msg").textContent=blocked}
+  else try{watch=navigator.geolocation.watchPosition(onPos,function(e){
+    if(!last)$("msg").textContent=e.code===1?blocked:"Signal GPS indisponible. Entre ta position manuellement ci-dessous."},
+    {enableHighAccuracy:true,maximumAge:2000,timeout:15000})}catch(e){$("msg").textContent=blocked}
+};
+function setManual(text){
+  var r=parseRoute(text);
+  if(r.bad.length||r.pts.length!==1)return false;
+  last={coords:{latitude:r.pts[0].la,longitude:r.pts[0].lo,speed:null,heading:null,altitude:null}};
+  return true;
+}
+$("setPos").onclick=function(){
+  if(setManual($("pos").value)){$("msg").textContent="";render()}
+  else $("msg").textContent="Position invalide. Utilise un code OACI connu ou lat/lon (46.35/-72.68).";
+};
+$("end").onclick=function(){
+  if(watch!==null)navigator.geolocation.clearWatch(watch);watch=null;
+  $("fly").classList.add("hide");$("setup").classList.remove("hide");
+};
+$("nextWp").onclick=function(){if(idx<route.length-1){idx++;render()}};
+function onPos(p){last=p;$("msg").textContent="";render()}
+
+function render(){
+  var hrs=(Date.now()-t0)/3600000,fnow=Math.max(0,fuel0-burn*hrs);
+  $("fuelNow").textContent=fnow.toFixed(1)+" gal";
+  $("endu").textContent=hm(fnow/burn);
+  $("nextWp").classList.toggle("hide",!(route.length>1&&idx<route.length-1));
+  $("wpName").textContent=route.length?"Prochain point : "+route[idx].n+" ("+(idx+1)+"/"+route.length+")":"Pas de route";
+  if(!last)return;
+  var c=last.coords,gs=c.speed!=null?c.speed*1.94384:null;
+  $("gs").textContent=gs!=null?Math.round(gs)+" kt":"--";
+  var trk=(c.heading!=null&&gs>2)?c.heading:null;
+  $("trk").textContent=trk!=null?deg(mag(trk)):"--";
+  $("alt").textContent=c.altitude!=null?Math.round(c.altitude*3.28084)+" ft":"--";
+  if(!route.length)return;
+  var wp=route[idx],d=dist(c.latitude,c.longitude,wp.la,wp.lo),b=bearing(c.latitude,c.longitude,wp.la,wp.lo);
+  if(d<1.5&&idx<route.length-1){idx++;render();return}
+  var w=windCalc(b,cruise,wd,ws);
+  $("dist").textContent=d.toFixed(1)+" NM";
+  $("brg").textContent=deg(mag(w.th));
+  $("needle").setAttribute("transform","rotate("+(trk!=null?b-trk:b)+")");
+  $("hw").textContent=(w.hw>=0?"Face ":"Arrière ")+Math.round(Math.abs(w.hw))+" kt";
+  $("xw").textContent=Math.round(Math.abs(w.xw))+" kt "+(w.xw>=0?"D":"G");
+  $("wca").textContent=(w.wca>=0?"+":"")+Math.round(w.wca)+"°";
+  var spd=(gs!=null&&gs>30)?gs:w.gs,eteN=d/spd,eteT=eteN,distT=d;
+  for(var i=idx;i<route.length-1;i++){
+    var L=route[i],M=route[i+1],ld=dist(L.la,L.lo,M.la,M.lo),lw=windCalc(bearing(L.la,L.lo,M.la,M.lo),cruise,wd,ws);
+    distT+=ld;eteT+=ld/lw.gs;
+  }
+  $("eteN").textContent=hm(eteN);
+  $("distT").textContent=distT.toFixed(0)+" NM";
+  $("eteT").textContent=hm(eteT);
+  $("eta").textContent=new Date(Date.now()+eteT*3600000).toLocaleTimeString("fr-CA",{hour:"2-digit",minute:"2-digit"});
+  var arr=fnow-burn*eteT,res=burn*0.75,el=$("fuelArr");
+  el.textContent=arr.toFixed(1)+" gal";
+  el.className="v "+(arr<res?"bad":"ok");
+  $("msg").innerHTML=arr<res?"<span class=\"bad\">Carburant insuffisant pour arriver avec la réserve de 45 min.</span>":"";
+}
+setInterval(function(){if(!$("fly").classList.contains("hide"))render()},5000);
+</script>
+</body>
+</html>
