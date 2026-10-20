@@ -745,6 +745,13 @@ input:focus-visible,button:focus-visible,summary:focus-visible{outline:2px solid
 .chk{display:flex;align-items:center;gap:6px;font-size:14px;color:var(--ink);margin:0}
 .chk input{width:18px;height:18px}
 textarea{width:100%;min-height:140px;font:12px "B612 Mono",monospace;background:var(--field);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:8px}
+.cat{display:inline-block;padding:1px 8px;border-radius:10px;font:700 12px "B612 Mono",monospace;color:#fff;vertical-align:middle}
+.cat.VFR{background:#1b7a3a}.cat.MVFR{background:#1d5fbf}.cat.IFR{background:#b3261e}.cat.LIFR{background:#8a2be2}.cat.NA{background:#5b6b78}
+.raw{font:12px "B612 Mono",monospace;background:var(--field);border:1px solid var(--line);border-radius:8px;padding:8px;margin:6px 0 0;white-space:pre-wrap;word-break:break-word;color:var(--ink)}
+.wxh{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:6px}
+.wxh h3{margin:0;font-size:15px}
+.wxt{font-size:13px;color:var(--mute)}
+pre.code{font:11px "B612 Mono",monospace;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:8px;overflow-x:auto;white-space:pre;color:var(--ink)}
 [hidden]{display:none!important}
 #printSheet{display:none}
 @media print{
@@ -850,6 +857,29 @@ textarea{width:100%;min-height:140px;font:12px "B612 Mono",monospace;background:
     <p class="note">Ce vent s’applique à toute la route. Pour un tronçon différent, remplis ses champs ci-dessous. Laisse vide pour garder le vent général.</p>
     <h2 style="margin-top:14px">Vent par tronçon (facultatif)</h2>
     <div class="list" id="lw"></div>
+
+    <h2 style="margin-top:18px">Météo des aéroports (METAR et TAF)</h2>
+    <p class="note" style="margin-top:0">Source : NAV CANADA. Les stations sont les aéroports de ta route, et l’aéroport le plus proche (à 60 NM ou moins) pour les points hors aéroports.</p>
+    <div class="tools" style="margin-top:8px">
+      <button class="btn on" id="wxGo" type="button">Récupérer la météo</button>
+    </div>
+    <label for="wxExtra">Autres stations (codes séparés par des espaces)</label>
+    <input id="wxExtra" type="text" placeholder="CYMX CYSC" autocapitalize="characters" autocomplete="off" autocorrect="off" spellcheck="false">
+    <p class="note" id="wxSt"></p>
+    <div class="list" id="wx" style="margin-top:8px"></div>
+    <details class="oaip">
+      <summary>Si la météo ne s’affiche pas</summary>
+      <p class="note">La page interroge NAV CANADA directement. Si le navigateur refuse, elle essaie des relais publics gratuits, qui voient les codes de stations demandés. Dans l’aperçu de claude.ai, aucune requête externe n’est permise : utilise la version hébergée.</p>
+      <p class="note">Pour un relais à toi (gratuit), crée un Worker Cloudflare avec ce code, puis colle son adresse suivie de <span class="mono">?url=</span> ci-dessous.</p>
+      <pre class="code">export default{async fetch(req){
+ const u=new URL(req.url).searchParams.get("url");
+ if(!u||!/^https:\/\/plan\.navcanada\.ca\//.test(u))return new Response("bad",{status:400});
+ const r=await fetch(u);
+ return new Response(r.body,{status:r.status,headers:{"content-type":"application/json","access-control-allow-origin":"*"}});
+}}</pre>
+      <label for="wxProxy" style="margin-top:8px">Adresse de ton relais (facultatif)</label>
+      <input id="wxProxy" type="text" placeholder="https://mon-relais.workers.dev/?url=" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+    </details>
   </section>
 
   <div class="step" data-step="4" hidden>
@@ -1024,6 +1054,8 @@ function syncInputs(){
   ["cruise","burn","fuel","taxi","res","wd","ws","decl"].forEach(function(k){$(k).value=S[k]});
   $("dep").value=S.dep||"";
   $("fdate").value=S.date||"";
+  $("wxExtra").value=S.wxExtra||"";
+  $("wxProxy").value=S.wxProxy||"";
   $("resAuto").checked=S.resAuto!==false;
   $("res").disabled=S.resAuto!==false;
   var isDA=AIRCRAFT[S.ac].n===DA20;
@@ -1333,6 +1365,145 @@ function fitRoute(){
   else if(S.pts.length===1)map.setView([S.pts[0].la,S.pts[0].lo],9);
 }
 $("fit").onclick=fitRoute;
+
+/* ---------- Météo (METAR et TAF) ---------- */
+var WXBASE="https://plan.navcanada.ca/weather/api/alpha/?site=",WX={},wxRoute=0;
+function nearestApt(la,lo){var best=null,bd=1e9;Object.keys(APT).forEach(function(k){var a=APT[k],d=dist(la,lo,a[0],a[1]);if(d<bd){bd=d;best=k}});return bd<=60?best:null}
+function wxStations(){
+  var out=[];
+  function add(k){if(k&&out.indexOf(k)<0)out.push(k)}
+  S.pts.forEach(function(p){var k=(p.n||"").toUpperCase();if(APT[k])add(k);else add(nearestApt(p.la,p.lo))});
+  (S.wxExtra||"").toUpperCase().split(/[\s,;]+/).filter(Boolean).forEach(function(k){if(/^[A-Z0-9]{3,4}$/.test(k))add(k)});
+  return out.slice(0,8);
+}
+function parseVis(s){
+  s=s.replace(/^[PM]/,"");
+  var m=/^(\d+)\s+(\d+)\/(\d+)$/.exec(s);if(m)return +m[1]+(+m[2])/(+m[3]);
+  m=/^(\d+)\/(\d+)$/.exec(s);if(m)return (+m[1])/(+m[2]);
+  return parseFloat(s);
+}
+function parseMetar(t){
+  var o={raw:t},body=t.split(/\sRMK\s/)[0],m;
+  m=/\s(\d{2})(\d{2})(\d{2})Z\b/.exec(body);
+  if(m){
+    var n=new Date(),dt=new Date(Date.UTC(n.getUTCFullYear(),n.getUTCMonth(),+m[1],+m[2],+m[3]));
+    if(dt.getTime()>n.getTime()+3600000)dt=new Date(Date.UTC(n.getUTCFullYear(),n.getUTCMonth()-1,+m[1],+m[2],+m[3]));
+    o.age=Math.round((n.getTime()-dt.getTime())/60000);
+  }
+  m=/\s(VRB|\d{3})(\d{2,3})(?:G(\d{2,3}))?KT\b/.exec(body);
+  if(m){o.wdir=m[1]==="VRB"?null:+m[1];o.vrb=m[1]==="VRB";o.wspd=+m[2];o.gust=m[3]?+m[3]:null}
+  m=/\s(\d{3})V(\d{3})\b/.exec(body);if(m){o.v1=+m[1];o.v2=+m[2]}
+  m=/\s((?:P|M)?\d+\s\d\/\d|(?:P|M)?\d\/\d|(?:P|M)?\d+)SM\b/.exec(body);if(m){o.visTxt=m[1];o.vis=parseVis(m[1])}
+  o.clouds=[];var re=/\b(FEW|SCT|BKN|OVC|VV)(\d{3})/g;
+  while((m=re.exec(body)))o.clouds.push({c:m[1],ft:+m[2]*100});
+  o.clear=/\b(SKC|CLR|NSC)\b/.test(body);
+  m=/\s(M?\d{2})\/(M?\d{2})?(?=\s|$)/.exec(body);
+  if(m){o.temp=+m[1].replace("M","-");if(m[2])o.dew=+m[2].replace("M","-")}
+  m=/\bA(\d{4})\b/.exec(body);if(m)o.inhg=+m[1]/100;
+  m=/\bQ(\d{4})\b/.exec(body);if(m)o.hpa=+m[1];
+  if(o.inhg&&!o.hpa)o.hpa=Math.round(o.inhg*33.8639);
+  var ceil=null;o.clouds.forEach(function(c){if((c.c==="BKN"||c.c==="OVC"||c.c==="VV")&&(ceil===null||c.ft<ceil))ceil=c.ft});
+  o.ceil=ceil;
+  if(o.vis===undefined&&ceil===null&&!o.clouds.length&&!o.clear)o.cat="NA";
+  else{
+    var v=o.vis===undefined?99:o.vis,c=ceil===null?99999:ceil;
+    o.cat=(v<1||c<500)?"LIFR":((v<3||c<1000)?"IFR":((v<=5||c<=3000)?"MVFR":"VFR"));
+  }
+  return o;
+}
+function cloudTxt(o){
+  if(o.clouds.length){
+    return o.clouds.map(function(c){
+      var nm={FEW:"Quelques nuages",SCT:"Épars",BKN:"Fragmenté",OVC:"Couvert",VV:"Ciel obscurci"}[c.c];
+      return nm+" à "+sp(c.ft)+" ft";
+    }).join(", ");
+  }
+  return o.clear?"Ciel dégagé":"--";
+}
+async function wxGetJson(url){
+  var tries=[{u:url,via:"direct"}],px=(S.wxProxy||"").trim();
+  if(px)tries.push({u:px+encodeURIComponent(url),via:"ton relais"});
+  else{tries.push({u:"https://corsproxy.io/?url="+encodeURIComponent(url),via:"relais public"});tries.push({u:"https://api.allorigins.win/raw?url="+encodeURIComponent(url),via:"relais public"})}
+  if(wxRoute>0&&wxRoute<tries.length){var f=tries.splice(wxRoute,1)[0];tries.unshift(f)}
+  for(var i=0;i<tries.length;i++){
+    try{
+      var c=new AbortController(),tm=setTimeout(function(){c.abort()},10000);
+      var r=await fetch(tries[i].u,{signal:c.signal});clearTimeout(tm);
+      if(!r.ok)continue;
+      var j=await r.json();
+      if(j&&j.data!==undefined){wxRoute=(tries[i].via==="direct")?0:wxRoute;return {j:j,via:tries[i].via}}
+    }catch(e){}
+  }
+  return null;
+}
+async function wxOne(code){
+  var res={code:code,metar:null,taf:null,via:null,fail:false};
+  var a=await wxGetJson(WXBASE+encodeURIComponent(code)+"&alpha=metar"),b=await wxGetJson(WXBASE+encodeURIComponent(code)+"&alpha=taf");
+  if(!a&&!b){res.fail=true;return res}
+  function latest(x){
+    if(!x||!x.j.data||!x.j.data.length)return null;
+    var d=x.j.data.filter(function(r){return r.text&&!r.hasError});if(!d.length)d=x.j.data.filter(function(r){return r.text});
+    d.sort(function(p,q){return String(q.startValidity).localeCompare(String(p.startValidity))});
+    return d[0]||null;
+  }
+  var m=latest(a),tf=latest(b);
+  res.metar=m?m.text.replace(/=$/,""):null;res.taf=tf?tf.text.replace(/=$/,""):null;res.via=(a&&a.via)||(b&&b.via);
+  return res;
+}
+async function loadWx(){
+  var st=wxStations(),box=$("wx"),stn=$("wxSt");
+  if(!st.length){stn.textContent="Ajoute un aéroport à la route ou une station ci-dessus.";return}
+  stn.textContent="Chargement de "+st.join(", ")+"…";box.innerHTML="";
+  var out=await Promise.all(st.map(wxOne));
+  WX={};out.forEach(function(r){WX[r.code]=r});
+  var fails=out.filter(function(r){return r.fail}).length;
+  stn.textContent=(fails===out.length?"Aucune réponse. Dans l’aperçu de claude.ai, les requêtes externes sont bloquées : ouvre la version hébergée. Sinon, vérifie ta connexion ou ouvre « Si la météo ne s’affiche pas ».":"Stations : "+st.join(", ")+". Mis à jour à "+new Date().toLocaleTimeString("fr-CA",{hour:"2-digit",minute:"2-digit"})+".");
+  renderWx(out);
+}
+function renderWx(list){
+  var h="";
+  list.forEach(function(r){
+    var a=APT[r.code],name=a?a[2]:"";
+    if(r.fail){h+="<div class=\"leg\"><div class=\"wxh\"><h3>"+esc(r.code)+" "+esc(name)+"</h3></div><p class=\"note\" style=\"margin:0\">Pas de réponse pour cette station.</p></div>";return}
+    var o=r.metar?parseMetar(r.metar):null;
+    h+="<div class=\"leg\"><div class=\"wxh\"><h3>"+esc(r.code)+" "+esc(name)+"</h3>"+(o?"<span class=\"cat "+o.cat+"\">"+(o.cat==="NA"?"?":o.cat)+"</span>":"")+"</div>";
+    if(!o){h+="<p class=\"note\" style=\"margin:0\">Aucun METAR pour cette station (beaucoup de petits aérodromes n’en ont pas).</p>"}
+    else{
+      var w=o.wspd===undefined?"--":(o.wspd===0?"Calme":((o.vrb?"Variable":deg(o.wdir)+" "+o.wspd+" kt")+(o.vrb?", "+o.wspd+" kt":"")+(o.gust?", rafales "+o.gust+" kt":"")+(o.v1!==undefined?" (varie de "+deg(o.v1)+" à "+deg(o.v2)+")":"")));
+      var spread=(o.temp!==undefined&&o.dew!==undefined)?o.temp-o.dew:null;
+      h+="<div class=\"lg\">"
+       +cell("Vent (vrai)",w)
+       +cell("Visibilité",o.visTxt?o.visTxt.replace(/^P/,"plus de ").replace(/^M/,"moins de ")+" SM":"--")
+       +cell("Nuages",cloudTxt(o))
+       +cell("Température / rosée",o.temp===undefined?"--":o.temp+" / "+(o.dew===undefined?"--":o.dew)+" °C")
+       +cell("Altimètre",o.inhg?o.inhg.toFixed(2)+" inHg ("+o.hpa+" hPa)":(o.hpa?o.hpa+" hPa":"--"))
+       +cell("Âge du rapport",o.age===undefined?"--":(o.age<0?"0":o.age)+" min",(o.age>70?"bad":""))
+       +"</div>";
+      var warn=[];
+      if(spread!==null&&spread<=3)warn.push("Écart température et rosée de "+spread+" °C : risque de brouillard ou de nuages bas.");
+      if(o.gust)warn.push("Rafales à "+o.gust+" kt.");
+      if(o.age>70)warn.push("Rapport de plus de 70 minutes : vérifie qu’un METAR plus récent n’existe pas.");
+      if(warn.length)h+="<p class=\"note bad\">"+esc(warn.join(" "))+"</p>";
+      h+="<div class=\"raw\">"+esc(r.metar)+"</div>";
+      if(o.wspd!==undefined&&!o.vrb&&o.wdir!==null&&o.wspd>0)h+="<div class=\"tools\" style=\"margin:8px 0 0\"><button class=\"btn\" type=\"button\" data-wxuse=\""+esc(r.code)+"\">Utiliser ce vent pour la route</button></div>";
+    }
+    if(r.taf){
+      var tf=esc(r.taf).replace(/\s(BECMG|TEMPO|FM\d{6}|PROB\d{2}|RMK)\b/g,"\n$1");
+      h+="<details style=\"margin-top:8px\"><summary class=\"wxt\">Prévision (TAF)</summary><div class=\"raw\">"+tf+"</div></details>";
+    }else h+="<p class=\"wxt\" style=\"margin:8px 0 0\">Pas de TAF pour cette station.</p>";
+    h+="</div>";
+  });
+  $("wx").innerHTML=h;
+}
+$("wx").addEventListener("click",function(e){
+  var b=e.target.closest("button[data-wxuse]");if(!b)return;
+  var r=WX[b.getAttribute("data-wxuse")];if(!r||!r.metar)return;
+  var o=parseMetar(r.metar);
+  if(o.wdir!==null&&o.wspd!==undefined){S.wd=o.wdir;S.ws=o.gust?Math.max(o.wspd,Math.round((o.wspd+o.gust)/2)):o.wspd;syncInputs();refresh();$("wxSt").textContent="Vent de surface de "+r.code+" appliqué à la route ("+deg(S.wd)+" "+S.ws+" kt). Le vent en altitude peut être très différent : consulte les prévisions de vents en altitude avant le vol."}
+});
+$("wxGo").onclick=loadWx;
+$("wxExtra").addEventListener("input",function(){S.wxExtra=$("wxExtra").value;save()});
+$("wxProxy").addEventListener("input",function(){S.wxProxy=$("wxProxy").value;wxRoute=0;save()});
 
 /* ---------- OpenAIP ---------- */
 var OAIP="planvol_oaip",oaipLayer=null,oaipOk=0,oaipEr=0,oaipKeyNow="";
