@@ -1126,7 +1126,7 @@ $("fit").onclick=fitRoute;
 var OAIP="planvol_oaip",oaipLayers={},oaipOk=0,oaipEr=0,oaipKeyNow="";
 function oaipStatus(){
   var msg=$("oaipMsg");
-  var test="https://0.api.tiles.openaip.net/api/data/airspaces/7/38/45.png?apiKey="+encodeURIComponent(oaipKeyNow);
+  var test="https://api.tiles.openaip.net/api/data/airspaces/7/38/45.png?apiKey="+encodeURIComponent(oaipKeyNow);
   msg.innerHTML=oaipOk+" tuile(s) chargée(s), "+oaipEr+" en erreur. "
    +(oaipOk===0&&oaipEr>=3?"Rien ne s’affiche : vérifie la clé, ou ouvre la version hébergée en https. ":"")
    +"<a href=\""+test+"\" target=\"_blank\" rel=\"noopener\">Ouvrir une tuile test</a> (une image ou un message d’erreur d’OpenAIP s’affiche).";
@@ -1139,7 +1139,7 @@ function setOaip(){
   ["airspaces","airports"].forEach(function(n){
     if(oaipLayers[n]){map.removeLayer(oaipLayers[n]);oaipLayers[n]=null}
     if(k&&$("oaip_"+n).checked){
-      var lay=L.tileLayer("https://{s}.api.tiles.openaip.net/api/data/"+n+"/{z}/{x}/{y}.png?apiKey="+encodeURIComponent(k),{subdomains:"0123",maxZoom:15,opacity:.85,attribution:"© openAIP"});
+      var lay=L.tileLayer("https://api.tiles.openaip.net/api/data/"+n+"/{z}/{x}/{y}.png?apiKey="+encodeURIComponent(k),{maxZoom:15,opacity:.85,attribution:"© openAIP"});
       lay.on("tileload",function(){oaipOk++;oaipStatus()});
       lay.on("tileerror",function(){oaipEr++;oaipStatus()});
       lay.addTo(map);oaipLayers[n]=lay;shown++;
