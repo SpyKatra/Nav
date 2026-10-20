@@ -682,7 +682,8 @@ h2{font-size:16px;margin:0 0 8px}
 .mono{font-family:"B612 Mono",ui-monospace,monospace}
 .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px;min-width:0}
 label{display:block;font-size:12px;color:var(--mute);margin-bottom:2px}
-select,input[type=text],input[type=number],input[type=time]{width:100%;min-width:0;font:inherit;font-family:"B612 Mono",ui-monospace,monospace;font-size:16px;padding:9px 10px;border-radius:8px;border:1px solid var(--line);background:var(--field);color:var(--ink)}
+select,input[type=text],input[type=number],input[type=time],input[type=date]{width:100%;min-width:0;font:inherit;font-family:"B612 Mono",ui-monospace,monospace;font-size:16px;padding:9px 10px;border-radius:8px;border:1px solid var(--line);background:var(--field);color:var(--ink)}
+input:disabled{opacity:.6}
 input:focus-visible,button:focus-visible,summary:focus-visible{outline:2px solid var(--cyan);outline-offset:2px}
 .steps{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
 .steps button{font:inherit;font-size:13px;color:var(--mute);background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:8px 2px;cursor:pointer;line-height:1.2}
@@ -785,8 +786,9 @@ textarea{width:100%;min-height:140px;font:12px "B612 Mono",monospace;background:
       <div><label for="burn">Consommation (gal US/h)</label><input id="burn" type="number" inputmode="decimal" step="0.1"></div>
       <div><label for="fuel">Carburant à bord (gal US)</label><input id="fuel" type="number" inputmode="decimal" step="0.1"></div>
       <div><label for="taxi">Roulage et montée (gal US)</label><input id="taxi" type="number" inputmode="decimal" step="0.1"></div>
-      <div><label for="res">Réserve (min)</label><input id="res" type="number" inputmode="numeric"></div>
+      <div><label for="res">Réserve (min)</label><input id="res" type="number" inputmode="numeric"><label class="chk" style="margin-top:6px"><input type="checkbox" id="resAuto" checked> Automatique</label></div>
     </div>
+    <p class="note" id="resNote">Réserve automatique : 30 min le jour, 45 min la nuit.</p>
     <p class="note">Les valeurs de chaque avion sont approximatives : remplace-les par celles de ton manuel de vol.</p>
   </section>
 
@@ -838,11 +840,13 @@ textarea{width:100%;min-height:140px;font:12px "B612 Mono",monospace;background:
   <section class="card step" data-step="3" hidden>
     <h2>Conditions du vol</h2>
     <div class="fields">
+      <div><label for="fdate">Date du vol</label><input id="fdate" type="date"></div>
       <div><label for="dep">Heure de départ</label><input id="dep" type="time"></div>
       <div><label for="wd">Vent venant de (° vrais)</label><input id="wd" type="number" inputmode="decimal"></div>
       <div><label for="ws">Vitesse du vent (kt)</label><input id="ws" type="number" inputmode="decimal"></div>
       <div><label for="decl">Déclinaison (° ouest)</label><input id="decl" type="number" inputmode="decimal" step="0.5"></div>
     </div>
+    <p class="note" id="nightNote"></p>
     <p class="note">Ce vent s’applique à toute la route. Pour un tronçon différent, remplis ses champs ci-dessous. Laisse vide pour garder le vent général.</p>
     <h2 style="margin-top:14px">Vent par tronçon (facultatif)</h2>
     <div class="list" id="lw"></div>
@@ -930,13 +934,13 @@ function sp(n){return String(n).replace(/\B(?=(\d{3})+(?!\d))/g," ")}
 })();
 var KEY="planvol_v1";
 var $=function(i){return document.getElementById(i)};
-var S={ac:0,acn:"Diamond DA20-C1",cruise:122,burn:6.4,fuel:24,crk:"4000-2700",taxi:1,res:45,wd:0,ws:0,decl:14,dep:"",example:true,
+var S={ac:0,acn:"Diamond DA20-C1",cruise:122,burn:6.4,fuel:24,crk:"4000-2700",taxi:1,res:30,resAuto:true,date:"",wd:0,ws:0,decl:14,dep:"",example:true,
  pts:[{n:"CYQB",la:APT.CYQB[0],lo:APT.CYQB[1]},{n:"CYRQ",la:APT.CYRQ[0],lo:APT.CYRQ[1]},{n:"CYHU",la:APT.CYHU[0],lo:APT.CYHU[1]}]};
 var addMode=true,clearArmed=false,clearTimer=null,step=1,mapReady=false;
 var STEPNAMES=["Avion","Route","Conditions","Résultat"];
 
 function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
-function loadSaved(){try{var j=localStorage.getItem(KEY);if(j){var o=JSON.parse(j);if(o&&o.pts&&typeof o.cruise==="number"){S=o;if(S.acn){for(var q=0;q<AIRCRAFT.length;q++)if(AIRCRAFT[q].n===S.acn)S.ac=q}else S.ac=Math.min(S.ac+1,AIRCRAFT.length-1);if(S.acn===DA20&&!S.crk&&S.cruise===115&&S.burn===7){S.cruise=122;S.burn=6.4;S.crk="4000-2700"}}}}catch(e){}}
+function loadSaved(){try{var j=localStorage.getItem(KEY);if(j){var o=JSON.parse(j);if(o&&o.pts&&typeof o.cruise==="number"){S=o;if(S.acn){for(var q=0;q<AIRCRAFT.length;q++)if(AIRCRAFT[q].n===S.acn)S.ac=q}else S.ac=Math.min(S.ac+1,AIRCRAFT.length-1);if(S.acn===DA20&&!S.crk&&S.cruise===115&&S.burn===7){S.cruise=122;S.burn=6.4;S.crk="4000-2700"}if(S.resAuto===undefined){S.resAuto=true;S.res=30}}}}catch(e){}}
 function esc(s){return String(s).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]})}
 function norm(s){return String(s).normalize("NFD").replace(/[̀-ͯ]/g,"").toLowerCase()}
 function rad(x){return x*Math.PI/180}
@@ -955,6 +959,34 @@ function windCalc(course,tas,wdir,wspd){
   return {th:(course+w*180/Math.PI+360)%360,gs:gs,hw:wspd*Math.cos(a),xw:wspd*Math.sin(a),wca:w*180/Math.PI,bad:false};
 }
 
+/* ---------- Jour et nuit (crépuscule civil) ---------- */
+function solarElev(date,lat,lon){
+  var n=date.getTime()/86400000+2440587.5-2451545.0;
+  var L=((280.460+0.9856474*n)%360+360)%360,g=rad(((357.528+0.9856003*n)%360+360)%360);
+  var lam=rad(L+1.915*Math.sin(g)+0.020*Math.sin(2*g)),eps=rad(23.439-0.0000004*n);
+  var dec=Math.asin(Math.sin(eps)*Math.sin(lam)),ra=Math.atan2(Math.cos(eps)*Math.sin(lam),Math.cos(lam));
+  var gmst=(((18.697374558+24.06570982441908*n)%24)+24)%24;
+  var ha=rad((((gmst*15+lon)%360)+360)%360)-ra;
+  return Math.asin(Math.sin(rad(lat))*Math.sin(dec)+Math.cos(rad(lat))*Math.cos(dec)*Math.cos(ha))*180/Math.PI;
+}
+function localDate(ds,min){var p=(ds||"").split("-");if(p.length!==3)return null;return new Date(+p[0],+p[1]-1,+p[2],0,Math.round(min),0,0)}
+function isNightAt(la,lo,ds,min){var d=localDate(ds,min);if(!d||isNaN(d.getTime()))return null;return solarElev(d,la,lo)<-6}
+function civilDay(la,lo,ds){
+  var start=null,end=null,m;
+  for(m=0;m<720;m++){if(isNightAt(la,lo,ds,m)===false){start=m;break}}
+  for(m=1439;m>=720;m--){if(isNightAt(la,lo,ds,m)===false){end=m;break}}
+  return {start:start,end:end};
+}
+function todayStr(){var d=new Date();return d.getFullYear()+"-"+("0"+(d.getMonth()+1)).slice(-2)+"-"+("0"+d.getDate()).slice(-2)}
+function reserveInfo(dep,tT){
+  if(S.resAuto===false)return {min:S.res,night:false,why:"manual"};
+  if(dep==null||S.pts.length<2||!S.date)return {min:30,night:false,why:"nodep"};
+  var a=S.pts[0],b=S.pts[S.pts.length-1];
+  var n1=isNightAt(a.la,a.lo,S.date,dep),n2=isNightAt(b.la,b.lo,S.date,dep+tT*60);
+  if(n1===null||n2===null)return {min:30,night:false,why:"nodep"};
+  return {min:(n1||n2)?45:30,night:!!(n1||n2),why:n1?"depnight":(n2?"arrnight":"day")};
+}
+
 function compute(){
   var legs=[],tD=0,tT=0,cum=0,dep=depMin(),i,a,b,d,tc,wd,ws,w,ete;
   for(i=0;i<S.pts.length-1;i++){
@@ -965,8 +997,8 @@ function compute(){
     legs.push({a:a,b:b,d:d,tc:tc,mc:tc+S.decl,mh:w.th+S.decl,wd:wd,ws:ws,w:w,ete:ete,fuel:ete*S.burn,eta:dep==null?null:dep+cum*60});
     tD+=d;tT+=ete;
   }
-  var trip=tT*S.burn,res=S.res/60*S.burn,req=trip+S.taxi+res,margin=S.fuel-req;
-  return {legs:legs,tD:tD,tT:tT,trip:trip,res:res,req:req,margin:margin,endu:S.fuel/S.burn,eta:dep==null?null:dep+tT*60};
+  var RI=reserveInfo(dep,tT),trip=tT*S.burn,res=RI.min/60*S.burn,req=trip+S.taxi+res,margin=S.fuel-req;
+  return {RI:RI,resMin:RI.min,legs:legs,tD:tD,tT:tT,trip:trip,res:res,req:req,margin:margin,endu:S.fuel/S.burn,eta:dep==null?null:dep+tT*60};
 }
 
 /* ---------- Étapes ---------- */
@@ -991,6 +1023,9 @@ $("next").onclick=function(){if(step<4)showStep(step+1)};
 function syncInputs(){
   ["cruise","burn","fuel","taxi","res","wd","ws","decl"].forEach(function(k){$(k).value=S[k]});
   $("dep").value=S.dep||"";
+  $("fdate").value=S.date||"";
+  $("resAuto").checked=S.resAuto!==false;
+  $("res").disabled=S.resAuto!==false;
   var isDA=AIRCRAFT[S.ac].n===DA20;
   $("cruiseBox").hidden=!isDA;
   if(isDA)$("cruiseSel").value=S.crk||"custom";
@@ -1021,6 +1056,8 @@ $("cruiseSel").addEventListener("change",function(){
   refresh();
 });
 $("dep").addEventListener("input",function(){S.dep=$("dep").value;refresh()});
+$("fdate").addEventListener("input",function(){S.date=$("fdate").value;refresh()});
+$("resAuto").addEventListener("change",function(){S.resAuto=$("resAuto").checked;$("res").disabled=S.resAuto;if(!S.resAuto)$("res").value=S.res;refresh()});
 
 /* ---------- Points et recherche ---------- */
 function parseRoute(text){
@@ -1145,7 +1182,7 @@ function renderSummary(C){
   h+=cell("Arrivée",C.eta==null?"--":clock(C.eta));
   h+=cell("Carburant du trajet",C.trip.toFixed(1)+" gal");
   h+=cell("Roulage et montée",S.taxi.toFixed(1)+" gal");
-  h+=cell("Réserve de "+S.res+" min",C.res.toFixed(1)+" gal");
+  h+=cell("Réserve "+(C.RI.why==="manual"?"manuelle":(C.RI.night?"de nuit":"de jour"))+" ("+C.resMin+" min)",C.res.toFixed(1)+" gal");
   h+=cell("Carburant requis",C.req.toFixed(1)+" gal");
   h+=cell("À bord",S.fuel.toFixed(1)+" gal");
   h+=cell("Marge",(C.margin>=0?"+":"")+C.margin.toFixed(1)+" gal",ok?"ok":"bad");
@@ -1184,7 +1221,7 @@ function planText(){
   L.push("Vent : "+deg(S.wd)+" / "+S.ws+" kt, déclinaison "+S.decl+"° O");
   C.legs.forEach(function(l,i){L.push((i+1)+". "+l.a.n+" > "+l.b.n+" : cap "+deg(l.mh)+" mag., "+l.d.toFixed(1)+" NM, GS "+Math.round(l.w.gs)+" kt, "+hm(l.ete)+", "+l.fuel.toFixed(1)+" gal"+(l.eta==null?"":", arrivée "+clock(l.eta)))});
   L.push("Total : "+C.tD.toFixed(0)+" NM, "+hm(C.tT)+", trajet "+C.trip.toFixed(1)+" gal");
-  L.push("Roulage et montée "+S.taxi.toFixed(1)+" gal, réserve "+S.res+" min ("+C.res.toFixed(1)+" gal)");
+  L.push("Roulage et montée "+S.taxi.toFixed(1)+" gal, réserve "+C.resMin+" min ("+C.res.toFixed(1)+" gal)");
   L.push("Requis "+C.req.toFixed(1)+" gal, à bord "+S.fuel.toFixed(1)+" gal, marge "+C.margin.toFixed(1)+" gal");
   return L.join("\n");
 }
@@ -1208,7 +1245,7 @@ function buildPrint(C){
     h+="<tr><td>"+(i+1)+"</td><td>"+esc(l.a.n)+" → "+esc(l.b.n)+"</td><td>"+deg(l.tc)+"</td><td>"+deg(l.mh)+"</td><td>"+l.d.toFixed(1)+"</td><td>"+deg(l.wd)+" / "+Math.round(l.ws)+"</td><td>"+Math.round(l.w.gs)+"</td><td>"+hm(l.ete)+"</td><td>"+l.fuel.toFixed(1)+"</td><td>"+(l.eta==null?"--":clock(l.eta))+"</td></tr>";
   });
   h+="<tr class=\"tot\"><td></td><td>Total</td><td></td><td></td><td>"+C.tD.toFixed(0)+"</td><td></td><td></td><td>"+hm(C.tT)+"</td><td>"+C.trip.toFixed(1)+"</td><td>"+(C.eta==null?"--":clock(C.eta))+"</td></tr></table>";
-  h+="<table><tr><th>Carburant du trajet</th><th>Roulage et montée</th><th>Réserve ("+S.res+" min)</th><th>Requis</th><th>À bord</th><th>Marge</th></tr><tr><td>"+C.trip.toFixed(1)+" gal</td><td>"+S.taxi.toFixed(1)+" gal</td><td>"+C.res.toFixed(1)+" gal</td><td>"+C.req.toFixed(1)+" gal</td><td>"+S.fuel.toFixed(1)+" gal</td><td>"+(C.margin>=0?"+":"")+C.margin.toFixed(1)+" gal</td></tr></table>";
+  h+="<table><tr><th>Carburant du trajet</th><th>Roulage et montée</th><th>Réserve ("+C.resMin+" min)</th><th>Requis</th><th>À bord</th><th>Marge</th></tr><tr><td>"+C.trip.toFixed(1)+" gal</td><td>"+S.taxi.toFixed(1)+" gal</td><td>"+C.res.toFixed(1)+" gal</td><td>"+C.req.toFixed(1)+" gal</td><td>"+S.fuel.toFixed(1)+" gal</td><td>"+(C.margin>=0?"+":"")+C.margin.toFixed(1)+" gal</td></tr></table>";
   h+="<p>Météo, NOTAM, altimètre :</p><div class=\"ln\"></div><div class=\"ln\"></div><div class=\"ln\"></div>";
   h+="<p style=\"margin-top:10pt;font-size:9pt\">Document de préparation non officiel. Distances en ligne droite, sans espace aérien ni relief. À valider avec les cartes officielles à jour et le manuel de vol de l’avion.</p>";
   $("printSheet").innerHTML=h;
@@ -1326,11 +1363,27 @@ $("oaipGo").onclick=setOaip;
 try{var sk=localStorage.getItem(OAIP);if(sk){$("oaipKey").value=sk;setOaip()}}catch(e){}
 
 /* ---------- Mise à jour ---------- */
+function fmtMin(m){return m==null?"--":clock(m)}
+function updateResUi(C){
+  var RI=C.RI,msg="",nn="";
+  if(S.resAuto!==false)$("res").value=C.resMin;
+  if(RI.why==="manual"){msg="Réserve manuelle de "+S.res+" min.";nn=msg}
+  else if(RI.why==="nodep"){msg="Réserve automatique : 30 min le jour, 45 min la nuit. Sans heure de départ, c’est la réserve de jour (30 min) qui est utilisée.";nn="Entre la date et l’heure de départ pour que la réserve passe à 45 min si le vol se fait la nuit."}
+  else{
+    var a=S.pts[0],cd=civilDay(a.la,a.lo,S.date),span=(cd.start!=null&&cd.end!=null)?" Jour civil au départ : de "+clock(cd.start)+" à "+clock(cd.end)+" (heure de ton appareil).":"";
+    var why=RI.why==="depnight"?"Le départ est de nuit.":(RI.why==="arrnight"?"L’arrivée est de nuit.":"Départ et arrivée de jour.");
+    msg="Réserve automatique de "+RI.min+" min. "+why;
+    nn=(RI.night?"Vol de nuit : réserve portée à 45 min. ":"Vol de jour : réserve de 30 min. ")+why+span+" La nuit commence à la fin du crépuscule civil (soleil à 6° sous l’horizon).";
+  }
+  $("resNote").textContent=msg;$("nightNote").textContent=nn;
+}
 function refresh(){
   var C=compute();
+  updateResUi(C);
   renderSummary(C);renderLegs(C);renderLegWinds(C);drawRoute(C);buildPrint(C);save();
 }
 loadSaved();
+if(!S.date||S.date<todayStr())S.date=todayStr();
 syncInputs();renderPoints();refresh();drawApts();drawGrid();
 showStep(1);
 </script>
