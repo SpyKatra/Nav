@@ -1,4 +1,6 @@
-<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"></head><body><title>Plan Vol</title>
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"></head><body>
+<title>Plan Vol</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Plan Vol">
@@ -869,7 +871,10 @@ pre.code{font:11px "B612 Mono",monospace;background:var(--panel);border:1px soli
     <div class="list" id="wx" style="margin-top:8px"></div>
     <details class="oaip">
       <summary>Si la météo ne s’affiche pas</summary>
-      <p class="note">La page interroge NAV CANADA directement. Si le navigateur refuse, elle essaie des relais publics gratuits, qui voient les codes de stations demandés. Dans l’aperçu de claude.ai, aucune requête externe n’est permise : utilise la version hébergée.</p>
+      <p class="note">Autre source : CheckWX, avec une clé gratuite (3 000 requêtes par jour) créée sur <span class="mono">checkwxapi.com</span>. Si elle est remplie, la page l’essaie en premier, puis revient à NAV CANADA en cas d’échec.</p>
+      <label for="wxKey">Clé API CheckWX (facultatif)</label>
+      <input id="wxKey" type="text" placeholder="Colle ta clé ici" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+      <p class="note" style="margin-top:14px">La page interroge NAV CANADA directement. Si le navigateur refuse, elle essaie des relais publics gratuits, qui voient les codes de stations demandés. Dans l’aperçu de claude.ai, aucune requête externe n’est permise : utilise la version hébergée.</p>
       <p class="note">Pour un relais à toi (gratuit), crée un Worker Cloudflare avec ce code, puis colle son adresse suivie de <span class="mono">?url=</span> ci-dessous.</p>
       <pre class="code">export default{async fetch(req){
  const u=new URL(req.url).searchParams.get("url");
@@ -1055,7 +1060,7 @@ function syncInputs(){
   $("dep").value=S.dep||"";
   $("fdate").value=S.date||"";
   $("wxExtra").value=S.wxExtra||"";
-  $("wxProxy").value=S.wxProxy||"";
+  $("wxProxy").value=S.wxProxy||"";$("wxKey").value=S.wxKey||"";
   $("resAuto").checked=S.resAuto!==false;
   $("res").disabled=S.resAuto!==false;
   var isDA=AIRCRAFT[S.ac].n===DA20;
@@ -1436,8 +1441,27 @@ async function wxGetJson(url){
   }
   return null;
 }
+async function cwGet(kind,code,key){
+  try{
+    var c=new AbortController(),tm=setTimeout(function(){c.abort()},10000);
+    var r=await fetch("https://api.checkwx.com/v2/"+kind+"/"+encodeURIComponent(code),{headers:{"X-API-Key":key},signal:c.signal});clearTimeout(tm);
+    if(!r.ok)return {err:r.status};
+    var j=await r.json();
+    var d=j&&j.data&&j.data[0];
+    if(d&&typeof d==="object")d=d.raw_text||d.raw||null;
+    return {txt:d||null};
+  }catch(e){return {err:"net"}}
+}
 async function wxOne(code){
   var res={code:code,metar:null,taf:null,via:null,fail:false};
+  var key=(S.wxKey||"").trim();
+  if(key){
+    var m1=await cwGet("metar",code,key),t1=await cwGet("taf",code,key);
+    if(!m1.err||!t1.err){
+      res.metar=m1.txt?m1.txt.replace(/=$/,""):null;res.taf=t1.txt?t1.txt.replace(/=$/,""):null;res.via="CheckWX";
+      if(res.metar||res.taf)return res;
+    }
+  }
   var a=await wxGetJson(WXBASE+encodeURIComponent(code)+"&alpha=metar"),b=await wxGetJson(WXBASE+encodeURIComponent(code)+"&alpha=taf");
   if(!a&&!b){res.fail=true;return res}
   function latest(x){
@@ -1504,6 +1528,7 @@ $("wx").addEventListener("click",function(e){
 $("wxGo").onclick=loadWx;
 $("wxExtra").addEventListener("input",function(){S.wxExtra=$("wxExtra").value;save()});
 $("wxProxy").addEventListener("input",function(){S.wxProxy=$("wxProxy").value;wxRoute=0;save()});
+$("wxKey").addEventListener("input",function(){S.wxKey=$("wxKey").value.trim();save()});
 
 /* ---------- OpenAIP ---------- */
 var OAIP="planvol_oaip",oaipLayer=null,oaipOk=0,oaipEr=0,oaipKeyNow="";
@@ -1558,4 +1583,5 @@ if(!S.date||S.date<todayStr())S.date=todayStr();
 syncInputs();renderPoints();refresh();drawApts();drawGrid();
 showStep(1);
 </script>
+
 </body></html>
