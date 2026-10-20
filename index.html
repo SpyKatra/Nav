@@ -771,12 +771,11 @@ textarea{width:100%;min-height:140px;font:12px "B612 Mono",monospace;background:
     <p class="note">Les ronds bleus sont des aéroports : touche-les pour les ajouter. Touche un tronçon pour y insérer un point. Glisse un numéro pour le déplacer.</p>
     <details class="oaip">
       <summary>Couches aéronautiques (OpenAIP)</summary>
-      <p class="note">Affiche les espaces aériens et les aéroports en données ouvertes par-dessus la carte. Il faut une clé gratuite : crée un compte sur <a href="https://www.openaip.net" target="_blank" rel="noopener">openaip.net</a>, ouvre « API Clients » dans ton profil, crée un client et copie le jeton. La clé reste dans ton navigateur.</p>
+      <p class="note">Affiche les espaces aériens, les aéroports et les aides à la navigation en données ouvertes par-dessus la carte, à partir du zoom 7. Il faut une clé gratuite : crée un compte sur <a href="https://www.openaip.net" target="_blank" rel="noopener">openaip.net</a>, ouvre « API Clients » dans ton profil, crée un client et copie le jeton. La clé reste dans ton navigateur.</p>
       <label for="oaipKey">Clé OpenAIP</label>
       <input id="oaipKey" type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Colle ton jeton ici">
       <div class="tools" style="margin-top:8px;margin-bottom:0">
-        <label class="chk"><input type="checkbox" id="oaip_airspaces" checked> Espaces aériens</label>
-        <label class="chk"><input type="checkbox" id="oaip_airports" checked> Aéroports</label>
+        <label class="chk"><input type="checkbox" id="oaip_on" checked> Afficher les couches</label>
         <button class="btn" id="oaipGo" type="button">Afficher</button>
       </div>
       <p class="note" id="oaipMsg" hidden></p>
@@ -1123,31 +1122,29 @@ function fitRoute(){
 $("fit").onclick=fitRoute;
 
 /* ---------- OpenAIP ---------- */
-var OAIP="planvol_oaip",oaipLayers={},oaipOk=0,oaipEr=0,oaipKeyNow="";
+var OAIP="planvol_oaip",oaipLayer=null,oaipOk=0,oaipEr=0,oaipKeyNow="";
 function oaipStatus(){
   var msg=$("oaipMsg");
-  var test="https://a.api.tiles.openaip.net/api/data/airspaces/7/38/45.png?apiKey="+encodeURIComponent(oaipKeyNow);
+  var test="https://a.api.tiles.openaip.net/api/data/openaip/9/154/180.png?apiKey="+encodeURIComponent(oaipKeyNow);
   msg.innerHTML=oaipOk+" tuile(s) chargée(s), "+oaipEr+" en erreur. "
-   +(oaipOk===0&&oaipEr>=3?"Rien ne s’affiche : vérifie la clé, ou ouvre la version hébergée en https. ":"")
+   +(map.getZoom()<7?"Zoome à 7 ou plus pour voir les couches. ":"")
+   +(oaipOk===0&&oaipEr>=3?"Rien ne s’affiche : vérifie la clé. Un « 429 » veut dire trop de requêtes, attends un peu. ":"")
    +"<a href=\""+test+"\" target=\"_blank\" rel=\"noopener\">Ouvrir une tuile test</a> (une image ou un message d’erreur d’OpenAIP s’affiche).";
   msg.hidden=false;
 }
 function setOaip(){
-  var k=$("oaipKey").value.trim(),msg=$("oaipMsg"),shown=0;
+  var k=$("oaipKey").value.trim(),msg=$("oaipMsg");
   try{localStorage.setItem(OAIP,k)}catch(e){}
   oaipOk=0;oaipEr=0;oaipKeyNow=k;
-  ["airspaces","airports"].forEach(function(n){
-    if(oaipLayers[n]){map.removeLayer(oaipLayers[n]);oaipLayers[n]=null}
-    if(k&&$("oaip_"+n).checked){
-      var lay=L.tileLayer("https://{s}.api.tiles.openaip.net/api/data/"+n+"/{z}/{x}/{y}.png?apiKey="+encodeURIComponent(k),{subdomains:"abc",maxZoom:15,opacity:.85,attribution:"© openAIP"});
-      lay.on("tileload",function(){oaipOk++;oaipStatus()});
-      lay.on("tileerror",function(){oaipEr++;oaipStatus()});
-      lay.addTo(map);oaipLayers[n]=lay;shown++;
-    }
-  });
-  if(!k){msg.textContent="Colle ta clé OpenAIP pour afficher les couches.";msg.hidden=false}
-  else if(!shown){msg.textContent="Coche au moins une couche.";msg.hidden=false}
-  else{oaipStatus();map.setZoom(Math.max(map.getZoom(),7))}
+  if(oaipLayer){map.removeLayer(oaipLayer);oaipLayer=null}
+  if(!k){msg.textContent="Colle ta clé OpenAIP pour afficher les couches.";msg.hidden=false;return}
+  if(!$("oaip_on").checked){msg.textContent="Les couches sont masquées.";msg.hidden=false;return}
+  oaipLayer=L.tileLayer("https://{s}.api.tiles.openaip.net/api/data/openaip/{z}/{x}/{y}.png?apiKey="+encodeURIComponent(k),{subdomains:"abc",minZoom:7,maxZoom:15,opacity:.85,attribution:"© openAIP"});
+  oaipLayer.on("tileload",function(){oaipOk++;oaipStatus()});
+  oaipLayer.on("tileerror",function(){oaipEr++;oaipStatus()});
+  oaipLayer.addTo(map);
+  if(map.getZoom()<7)map.setZoom(7);
+  oaipStatus();
 }
 $("oaipGo").onclick=setOaip;
 try{var sk=localStorage.getItem(OAIP);if(sk){$("oaipKey").value=sk;setOaip()}}catch(e){}
