@@ -668,7 +668,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
 
 </style>
 <style>
-/* Mise en page : une colonne, carte au centre, résultats en dessous. Ton d'instrument de cockpit. */
+/* Mise en page : quatre étapes (avion, route, conditions, résultat), une seule visible à la fois. Ton d'instrument de cockpit. */
 :root{--bg:#eef2f5;--panel:#ffffff;--ink:#0e1a24;--mute:#5b6b78;--line:#cfd8df;--amber:#a85d00;--cyan:#006f8a;--bad:#b3261e;--ok:#1b7a3a;--pinink:#ffffff;--legbg:rgba(255,255,255,.93);--field:#f6f9fb;
 box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0b141c;--panel:#13222e;--ink:#e8eef2;--mute:#8fa3b2;--line:#27394a;--amber:#ffb000;--cyan:#5fd0e8;--bad:#ff6b5e;--ok:#5fe08a;--pinink:#111111;--legbg:rgba(19,34,46,.93);--field:#0f1c26;color-scheme:dark}}
@@ -681,12 +681,16 @@ h2{font-size:16px;margin:0 0 8px}
 .sub{color:var(--mute);font-size:14px;margin:2px 0 0}
 .mono{font-family:"B612 Mono",ui-monospace,monospace}
 .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px;min-width:0}
-details.card>summary{cursor:pointer;font-size:16px;font-weight:700;list-style:none}
-details.card>summary::-webkit-details-marker{display:none}
-details.card[open]>summary{margin-bottom:10px}
 label{display:block;font-size:12px;color:var(--mute);margin-bottom:2px}
 input[type=text],input[type=number],input[type=time]{width:100%;min-width:0;font:inherit;font-family:"B612 Mono",ui-monospace,monospace;font-size:16px;padding:9px 10px;border-radius:8px;border:1px solid var(--line);background:var(--field);color:var(--ink)}
 input:focus-visible,button:focus-visible,summary:focus-visible{outline:2px solid var(--cyan);outline-offset:2px}
+.steps{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+.steps button{font:inherit;font-size:13px;color:var(--mute);background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:8px 2px;cursor:pointer;line-height:1.2}
+.steps button b{display:block;font-family:"B612 Mono",monospace;font-size:15px;color:var(--ink)}
+.steps button[aria-current="step"]{border:2px solid var(--amber);padding:7px 1px;color:var(--ink);font-weight:700}
+.stepnav{display:flex;gap:8px}
+.stepnav .btn{flex:1;padding:12px;font-size:16px}
+.stepnav .btn.go{background:var(--amber);color:var(--pinink);border-color:var(--amber);font-weight:700}
 .ac{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin-bottom:12px}
 .ac button{text-align:left;background:var(--field);color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:10px;font:inherit;cursor:pointer}
 .ac button b{display:block;font-size:14px}
@@ -694,10 +698,15 @@ input:focus-visible,button:focus-visible,summary:focus-visible{outline:2px solid
 .ac button[aria-pressed="true"]{border:2px solid var(--amber);padding:9px}
 .fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px}
 .btn{font:inherit;font-size:14px;color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:8px 12px;cursor:pointer}
+.btn:disabled{opacity:.4;cursor:default}
 .btn.on{background:var(--amber);color:var(--pinink);border-color:var(--amber);font-weight:700}
 .btn.warn{border-color:var(--bad);color:var(--bad)}
 .tools{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px}
 .addrow{display:grid;grid-template-columns:1fr auto;gap:8px;margin-top:8px}
+.res{display:flex;flex-direction:column;gap:4px;margin-top:6px}
+.res button{text-align:left;font:inherit;font-size:14px;color:var(--ink);background:var(--field);border:1px solid var(--line);border-radius:8px;padding:8px 10px;cursor:pointer}
+.res button b{font-family:"B612 Mono",monospace;color:var(--cyan)}
+.res button span{color:var(--mute);font-size:12px}
 #map{height:min(56vh,520px);min-height:320px;border-radius:10px;border:1px solid var(--line);background:#dfe7ec;z-index:0}
 #map.adding{cursor:crosshair}
 .note{font-size:13px;color:var(--mute);margin:8px 0 0}
@@ -725,7 +734,8 @@ input:focus-visible,button:focus-visible,summary:focus-visible{outline:2px solid
 .lg{display:grid;grid-template-columns:repeat(auto-fit,minmax(105px,1fr));gap:6px}
 .lg .cell{padding:6px 8px}
 .lg .cell .v{font-size:16px}
-.wind{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px;max-width:320px}
+.lwrow{display:grid;grid-template-columns:minmax(0,1.3fr) 1fr 1fr;gap:8px;align-items:end}
+.lwrow .t{font-size:14px;font-weight:700;padding-bottom:10px}
 .warnbox{border-left:3px solid var(--amber);padding:8px 12px;font-size:13px;color:var(--mute);background:var(--panel)}
 .oaip{margin-top:10px;border:1px solid var(--line);border-radius:10px;padding:10px;background:var(--field)}
 .oaip>summary{cursor:pointer;font-size:14px;font-weight:700}
@@ -735,16 +745,35 @@ input:focus-visible,button:focus-visible,summary:focus-visible{outline:2px solid
 .chk input{width:18px;height:18px}
 textarea{width:100%;min-height:140px;font:12px "B612 Mono",monospace;background:var(--field);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:8px}
 [hidden]{display:none!important}
+#printSheet{display:none}
+@media print{
+  main{display:none!important}
+  body{background:#fff;color:#000;padding:0}
+  #printSheet{display:block!important;font:11pt "B612",Arial,sans-serif;color:#000}
+  #printSheet h1{font-size:18pt;margin:0 0 4pt}
+  #printSheet p{margin:2pt 0}
+  #printSheet table{width:100%;border-collapse:collapse;margin:8pt 0;font-size:10pt}
+  #printSheet th,#printSheet td{border:1px solid #444;padding:3pt 4pt;text-align:left}
+  #printSheet .tot td{font-weight:700}
+  #printSheet .ln{border-bottom:1px solid #444;height:18pt;margin-top:6pt}
+}
 </style>
 
 <main>
   <header>
     <h1>Plan Vol</h1>
-    <p class="sub">Prépare ta route sur la carte, puis lis les caps, les temps et le carburant.</p>
+    <p class="sub">Prépare ta route en quatre étapes.</p>
   </header>
 
-  <details class="card" id="setup" open>
-    <summary>Avion et conditions</summary>
+  <nav class="steps" id="steps" aria-label="Étapes">
+    <button type="button" data-s="1"><b>1</b>Avion</button>
+    <button type="button" data-s="2"><b>2</b>Route</button>
+    <button type="button" data-s="3"><b>3</b>Conditions</button>
+    <button type="button" data-s="4"><b>4</b>Résultat</button>
+  </nav>
+
+  <section class="card step" data-step="1">
+    <h2>Avion et carburant</h2>
     <div class="ac" id="acList" role="group" aria-label="Avion"></div>
     <div class="fields">
       <div><label for="cruise">Vitesse vraie (kt)</label><input id="cruise" type="number" inputmode="decimal"></div>
@@ -752,69 +781,95 @@ textarea{width:100%;min-height:140px;font:12px "B612 Mono",monospace;background:
       <div><label for="fuel">Carburant à bord (gal US)</label><input id="fuel" type="number" inputmode="decimal" step="0.1"></div>
       <div><label for="taxi">Roulage et montée (gal US)</label><input id="taxi" type="number" inputmode="decimal" step="0.1"></div>
       <div><label for="res">Réserve (min)</label><input id="res" type="number" inputmode="numeric"></div>
+    </div>
+    <p class="note">Les valeurs de chaque avion sont approximatives : remplace-les par celles de ton manuel de vol.</p>
+  </section>
+
+  <div class="step" data-step="2" hidden>
+    <section class="card">
+      <h2>Carte</h2>
+      <div class="tools">
+        <button class="btn on" id="addMode" type="button" aria-pressed="true">Toucher la carte ajoute un point</button>
+        <button class="btn" id="fit" type="button">Cadrer la route</button>
+      </div>
+      <div id="map" class="adding" role="application" aria-label="Carte de la route"></div>
+      <p class="note bad" id="mapNote" hidden>Le fond de carte n’est pas disponible dans cette page. Les points, les aéroports et les calculs fonctionnent. Pour voir la vraie carte, ouvre le fichier mis en ligne en https.</p>
+      <p class="note">Les ronds bleus sont des aéroports : touche-les pour les ajouter. Touche un tronçon pour y insérer un point. Glisse un numéro pour le déplacer.</p>
+      <details class="oaip">
+        <summary>Couches aéronautiques (OpenAIP)</summary>
+        <p class="note">Affiche les espaces aériens, les aéroports et les aides à la navigation en données ouvertes par-dessus la carte, à partir du zoom 7. Il faut une clé gratuite : crée un compte sur <a href="https://www.openaip.net" target="_blank" rel="noopener">openaip.net</a>, ouvre « API Clients » dans ton profil, crée un client et copie le jeton. La clé reste dans ton navigateur.</p>
+        <label for="oaipKey">Clé OpenAIP</label>
+        <input id="oaipKey" type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Colle ton jeton ici">
+        <div class="tools" style="margin-top:8px;margin-bottom:0">
+          <label class="chk"><input type="checkbox" id="oaip_on" checked> Afficher les couches</label>
+          <button class="btn" id="oaipGo" type="button">Afficher</button>
+        </div>
+        <p class="note" id="oaipMsg" hidden></p>
+        <p class="note">Données communautaires, parfois incomplètes ou périmées. Ce n’est pas une carte VNC : vérifie les espaces aériens et les NOTAM dans les publications officielles.</p>
+      </details>
+    </section>
+
+    <section class="card" style="margin-top:16px">
+      <h2>Ajouter un point</h2>
+      <div class="addrow">
+        <div><label for="addIn">Nom, ville ou code d’aéroport, ou coordonnées</label><input id="addIn" type="text" placeholder="Québec, CYRQ ou 46.35/-72.68" autocomplete="off" autocorrect="off" spellcheck="false"></div>
+        <button class="btn" id="addBtn" type="button" style="align-self:end;height:42px">Ajouter</button>
+      </div>
+      <div class="res" id="addRes"></div>
+      <p class="note bad" id="addErr" hidden></p>
+      <p class="note">Liste de plus de 500 aéroports du Canada et du nord des États-Unis (surtout les aéroports moyens et grands). Les petits aérodromes n’y sont pas : ajoute-les par coordonnées ou en touchant la carte.</p>
+    </section>
+
+    <section class="card" style="margin-top:16px">
+      <h2>Points de passage</h2>
+      <div class="tools">
+        <button class="btn" id="rev" type="button">Inverser la route</button>
+        <button class="btn" id="clear" type="button">Tout effacer</button>
+      </div>
+      <div class="list" id="pts"></div>
+    </section>
+  </div>
+
+  <section class="card step" data-step="3" hidden>
+    <h2>Conditions du vol</h2>
+    <div class="fields">
       <div><label for="dep">Heure de départ</label><input id="dep" type="time"></div>
       <div><label for="wd">Vent venant de (° vrais)</label><input id="wd" type="number" inputmode="decimal"></div>
       <div><label for="ws">Vitesse du vent (kt)</label><input id="ws" type="number" inputmode="decimal"></div>
       <div><label for="decl">Déclinaison (° ouest)</label><input id="decl" type="number" inputmode="decimal" step="0.5"></div>
     </div>
-    <p class="note">Le vent s’applique à toute la route. Tu peux le changer tronçon par tronçon plus bas.</p>
-  </details>
+    <p class="note">Ce vent s’applique à toute la route. Pour un tronçon différent, remplis ses champs ci-dessous. Laisse vide pour garder le vent général.</p>
+    <h2 style="margin-top:14px">Vent par tronçon (facultatif)</h2>
+    <div class="list" id="lw"></div>
+  </section>
 
-  <section class="card">
-    <h2>Carte</h2>
-    <div class="tools">
-      <button class="btn on" id="addMode" type="button" aria-pressed="true">Toucher la carte ajoute un point</button>
-      <button class="btn" id="fit" type="button">Cadrer la route</button>
-    </div>
-    <div id="map" class="adding" role="application" aria-label="Carte de la route"></div>
-    <p class="note bad" id="mapNote" hidden>Le fond de carte n’est pas disponible dans cette page. Les points, les aéroports et les calculs fonctionnent. Pour voir la vraie carte, ouvre le fichier mis en ligne en https.</p>
-    <p class="note">Les ronds bleus sont des aéroports : touche-les pour les ajouter. Touche un tronçon pour y insérer un point. Glisse un numéro pour le déplacer.</p>
-    <details class="oaip">
-      <summary>Couches aéronautiques (OpenAIP)</summary>
-      <p class="note">Affiche les espaces aériens, les aéroports et les aides à la navigation en données ouvertes par-dessus la carte, à partir du zoom 7. Il faut une clé gratuite : crée un compte sur <a href="https://www.openaip.net" target="_blank" rel="noopener">openaip.net</a>, ouvre « API Clients » dans ton profil, crée un client et copie le jeton. La clé reste dans ton navigateur.</p>
-      <label for="oaipKey">Clé OpenAIP</label>
-      <input id="oaipKey" type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Colle ton jeton ici">
-      <div class="tools" style="margin-top:8px;margin-bottom:0">
-        <label class="chk"><input type="checkbox" id="oaip_on" checked> Afficher les couches</label>
-        <button class="btn" id="oaipGo" type="button">Afficher</button>
+  <div class="step" data-step="4" hidden>
+    <section class="card">
+      <h2>Résumé du vol</h2>
+      <p class="note" id="exNote" hidden>Route d’exemple. Va à l’étape Route pour la remplacer par la tienne.</p>
+      <div id="sum" class="sum"></div>
+      <div class="tools" style="margin-top:10px;margin-bottom:0">
+        <button class="btn" id="copy" type="button">Copier le plan</button>
+        <button class="btn" id="print" type="button">Imprimer ou enregistrer en PDF</button>
       </div>
-      <p class="note" id="oaipMsg" hidden></p>
-      <p class="note">Données communautaires, parfois incomplètes ou périmées. Ce n’est pas une carte VNC : vérifie les espaces aériens et les NOTAM dans les publications officielles.</p>
-    </details>
-    <div class="addrow">
-      <div><label for="addIn">Ajouter par code ou coordonnées</label><input id="addIn" type="text" placeholder="CYRQ ou 46.35/-72.68" autocapitalize="characters" autocomplete="off" autocorrect="off" spellcheck="false"></div>
-      <button class="btn" id="addBtn" type="button" style="align-self:end;height:42px">Ajouter</button>
-    </div>
-    <p class="note bad" id="addErr" hidden></p>
-  </section>
+      <p class="note" id="copyMsg" hidden></p>
+      <textarea id="out" readonly hidden aria-label="Texte du plan"></textarea>
+    </section>
+    <section class="card" style="margin-top:16px">
+      <h2>Tronçons</h2>
+      <div class="list" id="legs"></div>
+    </section>
+  </div>
 
-  <section class="card">
-    <h2>Résumé du vol</h2>
-    <p class="note" id="exNote" hidden>Route d’exemple. Efface-la ou modifie-la pour préparer ton vol.</p>
-    <div id="sum" class="sum"></div>
-    <div class="tools" style="margin-top:10px;margin-bottom:0">
-      <button class="btn" id="copy" type="button">Copier le plan</button>
-    </div>
-    <p class="note" id="copyMsg" hidden></p>
-    <textarea id="out" readonly hidden aria-label="Texte du plan"></textarea>
-  </section>
+  <div class="stepnav">
+    <button class="btn" id="back" type="button">Retour</button>
+    <button class="btn go" id="next" type="button">Suivant</button>
+  </div>
 
-  <section class="card">
-    <h2>Points de passage</h2>
-    <div class="tools">
-      <button class="btn" id="rev" type="button">Inverser la route</button>
-      <button class="btn" id="clear" type="button">Tout effacer</button>
-    </div>
-    <div class="list" id="pts"></div>
-  </section>
-
-  <section class="card">
-    <h2>Tronçons</h2>
-    <div class="list" id="legs"></div>
-  </section>
-
-  <p class="warnbox">Outil de préparation seulement. Les distances sont en ligne droite, sans espace aérien ni relief. Les coordonnées des aéroports sont approximatives. Valide la route sur les cartes officielles et les performances dans le manuel de vol de ton avion.</p>
+  <p class="warnbox">Outil de préparation seulement. Les distances sont en ligne droite, sans espace aérien ni relief. Les coordonnées des aéroports viennent de données ouvertes et peuvent contenir des erreurs. Valide la route sur les cartes officielles et les performances dans le manuel de vol de ton avion.</p>
 </main>
+
+<div id="printSheet" aria-hidden="true"></div>
 
 <script>
 /* @preserve
@@ -835,28 +890,33 @@ var AIRCRAFT=[
  {n:"Beechcraft Baron 58",c:190,b:30,f:166},
  {n:"Autre appareil",c:100,b:10,f:40}
 ];
+/* Aéroports : [latitude, longitude, nom, ville, 1 si grand aéroport] */
 var APT={
- CYQB:[46.7911,-71.3933,"Québec"],CYUL:[45.4706,-73.7408,"Montréal-Trudeau"],CYHU:[45.5175,-73.4169,"Saint-Hubert"],
- CYMX:[45.6795,-74.0387,"Mirabel"],CYJN:[45.2944,-73.2814,"Saint-Jean"],CYRQ:[46.3528,-72.6794,"Trois-Rivières"],
- CYSC:[45.4386,-71.6914,"Sherbrooke"],CYND:[45.5217,-75.5636,"Gatineau"],CYOW:[45.3225,-75.6692,"Ottawa"],
- CYBG:[48.3306,-70.9964,"Bagotville"],CYRJ:[48.5200,-72.2656,"Roberval"],CYMT:[49.7719,-74.5272,"Chibougamau"],
- CYVO:[48.0533,-77.7828,"Val-d’Or"],CYUY:[48.2061,-78.8356,"Rouyn-Noranda"],CYRI:[47.7644,-69.5847,"Rivière-du-Loup"],
- CYBC:[49.1325,-68.2044,"Baie-Comeau"],CYZV:[50.2233,-66.2656,"Sept-Îles"],CYGP:[48.7753,-64.4786,"Gaspé"],
- CYGV:[50.2819,-63.6114,"Havre-Saint-Pierre"],CYNA:[50.1900,-61.7900,"Natashquan"],
- CYGK:[44.2253,-76.5969,"Kingston"],CYTR:[44.1189,-77.5281,"Trenton"],CYTZ:[43.6275,-79.3961,"Toronto Billy Bishop"],
- CYYZ:[43.6772,-79.6306,"Toronto Pearson"],CYKF:[43.4608,-80.3786,"Waterloo"],CYSB:[46.6250,-80.7989,"Sudbury"],
- CYAM:[46.4850,-84.5094,"Sault-Sainte-Marie"],CYFC:[45.8689,-66.5372,"Fredericton"],CYQM:[46.1122,-64.6786,"Moncton"],
- CYHZ:[44.8808,-63.5086,"Halifax"],CYYG:[46.2900,-63.1211,"Charlottetown"],CYYT:[47.6186,-52.7519,"Saint-Jean T.-N."]
+ CYQB:[46.7911,-71.3933,"Québec / Jean-Lesage","Québec",1],CYUL:[45.4706,-73.7408,"Montréal / Trudeau","Montréal",1],CYHU:[45.5175,-73.4169,"Montréal / Saint-Hubert","Montréal",0],
+ CYMX:[45.6795,-74.0387,"Montréal / Mirabel","Mirabel",0],CYJN:[45.2944,-73.2814,"Saint-Jean","Saint-Jean-sur-Richelieu",0],CYRQ:[46.3528,-72.6794,"Trois-Rivières","Trois-Rivières",0],
+ CYSC:[45.4386,-71.6914,"Sherbrooke","Sherbrooke",0],CYND:[45.5217,-75.5636,"Gatineau","Gatineau",0],CYOW:[45.3225,-75.6692,"Ottawa / Macdonald-Cartier","Ottawa",1],
+ CYBG:[48.3306,-70.9964,"Bagotville","Saguenay",0],CYRJ:[48.5200,-72.2656,"Roberval","Roberval",0],CYMT:[49.7719,-74.5272,"Chibougamau","Chibougamau",0],
+ CYVO:[48.0533,-77.7828,"Val-d’Or","Val-d’Or",0],CYUY:[48.2061,-78.8356,"Rouyn-Noranda","Rouyn-Noranda",0],CYRI:[47.7644,-69.5847,"Rivière-du-Loup","Rivière-du-Loup",0],
+ CYBC:[49.1325,-68.2044,"Baie-Comeau","Baie-Comeau",0],CYZV:[50.2233,-66.2656,"Sept-Îles","Sept-Îles",0],CYGP:[48.7753,-64.4786,"Gaspé","Gaspé",0],
+ CYGV:[50.2819,-63.6114,"Havre-Saint-Pierre","Havre-Saint-Pierre",0],CYNA:[50.1900,-61.7900,"Natashquan","Natashquan",0],
+ CYGK:[44.2253,-76.5969,"Kingston","Kingston",0],CYTR:[44.1189,-77.5281,"Trenton","Trenton",0],CYTZ:[43.6275,-79.3961,"Toronto / Billy Bishop","Toronto",0],
+ CYYZ:[43.6772,-79.6306,"Toronto / Pearson","Toronto",1],CYKF:[43.4608,-80.3786,"Waterloo","Waterloo",0],CYSB:[46.6250,-80.7989,"Sudbury","Sudbury",0],
+ CYAM:[46.4850,-84.5094,"Sault-Sainte-Marie","Sault-Sainte-Marie",0],CYFC:[45.8689,-66.5372,"Fredericton","Fredericton",0],CYQM:[46.1122,-64.6786,"Moncton","Moncton",0],
+ CYHZ:[44.8808,-63.5086,"Halifax","Halifax",1],CYYG:[46.2900,-63.1211,"Charlottetown","Charlottetown",0],CYYT:[47.6186,-52.7519,"Saint-Jean T.-N.","Saint-Jean",0]
 };
+var APT_X={"CAJ4":[52.4515,-125.3038,"Anahim Lake Airport","Anahim Lake",0],"CAZ5":[50.7753,-121.3213,"Cache Creek-Ashcroft Regional Airport","Cache Creek",0],"CBBC":[52.185,-128.157,"Bella Bella (Campbell Island) Airport","Bella Bella",0],"CNC3":[43.7603,-79.875,"Brampton-Caledon Airport","",0],"CYAC":[51.7272,-91.8244,"Cat Lake Airport","Cat Lake",0],"CYAG":[48.6557,-93.4435,"Fort Frances Municipal Airport","Fort Frances",0],"CYAH":[53.7547,-73.6753,"La Grande-4 Airport","La Grande-4",0],"CYAL":[50.5822,-126.916,"Alert Bay Airport","Alert Bay",0],"CYAM":[46.485,-84.5094,"Sault Ste Marie Airport","Sault Ste Marie",0],"CYAQ":[53.5247,-88.6428,"Kasabonika Airport","Kasabonika",0],"CYAS":[60.0272,-69.9992,"Kangirsuk Airport","Kangirsuk",0],"CYAT":[52.9275,-82.4319,"Attawapiskat Airport","Attawapiskat",0],"CYAV":[50.0564,-97.0325,"Winnipeg / St. Andrews Airport","Saint Andrews",0],"CYAX":[50.2944,-96.01,"Lac Du Bonnet Airport","Lac Du Bonnet",0],"CYAY":[51.3919,-56.0832,"St. Anthony Airport","St. Anthony",0],"CYAZ":[49.0798,-125.7756,"Tofino / Long Beach Airport","Tofino",0],"CYBB":[68.5344,-89.8081,"Kugaaruk Airport","Kugaaruk",0],"CYBC":[49.1325,-68.2044,"Baie-Comeau Airport","Baie-Comeau",0],"CYBD":[52.3875,-126.596,"Bella Coola Airport","Bella Coola",0],"CYBE":[59.5614,-108.481,"Uranium City Airport","Uranium City",0],"CYBF":[54.3042,-110.744,"Bonnyville Airport","Bonnyville",0],"CYBG":[48.3306,-70.9964,"CFB Bagotville","Bagotville",0],"CYBK":[64.2989,-96.0778,"Baker Lake Airport","Baker Lake",0],"CYBL":[49.9508,-125.271,"Campbell River Airport","Campbell River",0],"CYBQ":[58.7061,-98.5122,"Tadoule Lake Airport","Tadoule Lake",0],"CYBR":[49.91,-99.9519,"Brandon Municipal Airport","Brandon",0],"CYBT":[57.8894,-101.679,"Brochet Airport","Brochet",0],"CYBU":[53.3325,-104.008,"Nipawin Airport","Nipawin",0],"CYBV":[52.3589,-97.0183,"Berens River Airport","Berens River",0],"CYBW":[51.1031,-114.374,"Calgary / Springbank Airport","Calgary",0],"CYBX":[51.4436,-57.1853,"Lourdes-de-Blanc-Sablon Airport","Blanc-Sablon",0],"CYCA":[53.6825,-57.0423,"Cartwright Airport","Cartwright",0],"CYCB":[69.1081,-105.138,"Cambridge Bay Airport","Cambridge Bay",0],"CYCC":[45.0926,-74.5677,"Cornwall Regional Airport","Cornwall",0],"CYCD":[49.055,-123.8699,"Nanaimo Airport","Nanaimo",0],"CYCE":[43.2856,-81.5083,"Centralia / James T. Field Memorial Aerodrome","Huron Park",0],"CYCG":[49.2964,-117.632,"Castlegar/West Kootenay Regional Airport","Castlegar",0],"CYCH":[47.0078,-65.4492,"Miramichi Airport","Miramichi",0],"CYCL":[47.9908,-66.3303,"Charlo Airport","Charlo",0],"CYCN":[49.1056,-81.0136,"Cochrane Airport","Cochrane",0],"CYCO":[67.8167,-115.144,"Kugluktuk Airport","Kugluktuk",0],"CYCP":[52.1167,-119.283,"Blue River Airport","Blue River",0],"CYCQ":[55.6872,-121.627,"Chetwynd Airport","Chetwynd",0],"CYCR":[54.6106,-97.7608,"Cross Lake (Charlie Sinclair Memorial) Airport","Cross Lake",0],"CYCS":[63.3469,-90.7311,"Chesterfield Inlet Airport","Chesterfield Inlet",0],"CYCY":[70.4861,-68.5167,"Clyde River Airport","Clyde River",0],"CYDA":[64.0431,-139.128,"Dawson City Airport","Dawson City",0],"CYDB":[61.3711,-139.041,"Burwash Airport","Burwash Landing",0],"CYDC":[49.4681,-120.511,"Princeton Airport","Town of Princeton",0],"CYDF":[49.2108,-57.3914,"Deer Lake Airport","Deer Lake",0],"CYDM":[61.9706,-132.423,"Ross River Airport","Ross River",0],"CYDN":[51.1008,-100.052,"Dauphin Barker Airport","Dauphin",0],"CYDO":[48.7785,-72.375,"Dolbeau St Felicien Airport","Dolbeau-St-Félicien",0],"CYDP":[56.5508,-61.6822,"Nain Airport","Nain",0],"CYDQ":[55.7423,-120.183,"Dawson Creek Airport","Dawson Creek",0],"CYEE":[44.6833,-79.9283,"Huronia Airport","Midland",0],"CYEG":[53.3097,-113.58,"Edmonton International Airport","Edmonton",1],"CYEK":[61.0942,-94.0708,"Arviat Airport","Arviat",0],"CYEL":[46.3514,-82.5614,"Elliot Lake Municipal Airport","Elliot Lake",0],"CYEM":[45.8424,-81.8576,"Manitoulin East Municipal Airport","Sheguiandah",0],"CYEN":[49.2103,-102.966,"Estevan Airport","Estevan",0],"CYER":[56.0189,-87.6761,"Fort Severn Airport","Fort Severn",0],"CYET":[53.5789,-116.465,"Edson Airport","Edson",0],"CYEV":[68.3042,-133.483,"Inuvik Mike Zubko Airport","Inuvik",0],"CYEY":[48.5639,-78.2497,"Amos/Magny Airport","Amos",0],"CYFA":[52.2014,-81.6969,"Fort Albany Airport","Fort Albany",0],"CYFB":[63.7564,-68.5558,"Iqaluit Airport","Iqaluit",0],"CYFC":[45.8689,-66.5372,"Fredericton Airport","Fredericton",0],"CYFE":[48.7461,-69.0972,"Forestville Airport","Forestville",0],"CYFH":[51.5619,-87.9078,"Fort Hope Airport","Fort Hope",0],"CYFJ":[46.4094,-74.78,"Mont-Tremblant International Airport","La Macaza",0],"CYFO":[54.6781,-101.682,"Flin Flon Airport","Flin Flon",0],"CYFR":[61.1808,-113.69,"Fort Resolution Airport","Fort Resolution",0],"CYFS":[61.7602,-121.237,"Fort Simpson Airport","Fort Simpson",0],"CYFT":[55.0773,-59.1879,"Makkovik Airport","Makkovik",0],"CYGB":[49.6942,-124.518,"Texada Gillies Bay Airport","Texada",0],"CYGD":[43.7669,-81.7106,"Goderich Airport","Goderich",0],"CYGE":[51.2992,-116.982,"Golden Airport","Golden",0],"CYGH":[66.2408,-128.651,"Fort Good Hope Airport","Fort Good Hope",0],"CYGK":[44.2253,-76.5969,"Kingston Norman Rogers Airport","Kingston",0],"CYGL":[53.6253,-77.7042,"La Grande Rivière Airport","La Grande Rivière",0],"CYGM":[50.6281,-97.0433,"Gimli Industrial Park Airport","Gimli",0],"CYGO":[54.5589,-94.4914,"Gods Lake Narrows Airport","Gods Lake Narrows",0],"CYGP":[48.7753,-64.4786,"Gaspé (Michel-Pouliot) Airport","Gaspé",0],"CYGQ":[49.7783,-86.9394,"Geraldton Greenstone Regional Airport","Geraldton",0],"CYGR":[47.4252,-61.7786,"Îles-de-la-Madeleine Airport","Les Îles-de-la-Madeleine",0],"CYGT":[69.3647,-81.8161,"Igloolik Airport","Igloolik",0],"CYGV":[50.2819,-63.6114,"Havre-Saint-Pierre Airport","Havre-Saint-Pierre",0],"CYGW":[55.2819,-77.7653,"Kuujjuarapik Airport","Kuujjuarapik",0],"CYGX":[56.3575,-94.7106,"Gillam Airport","Gillam",0],"CYGZ":[76.4261,-82.9092,"Grise Fiord Airport","Grise Fiord",0],"CYHA":[61.0464,-69.6178,"Quaqtaq Airport","Quaqtaq",0],"CYHD":[49.8317,-92.7442,"Dryden Regional Airport","Dryden",0],"CYHE":[49.3689,-121.495,"Hope Airport / FVRD Regional Airpark","Hope",0],"CYHF":[49.7142,-83.6861,"Hearst René Fontaine Municipal Airport","Hearst",0],"CYHH":[51.6911,-76.1356,"Nemiscau Airport","Nemiscau",0],"CYHI":[70.7628,-117.806,"Ulukhaktok Holman Airport","Ulukhaktok",0],"CYHK":[68.6356,-95.8497,"Gjoa Haven Airport","Gjoa Haven",0],"CYHM":[43.1736,-79.935,"John C. Munro Hamilton International Airport","Hamilton",0],"CYHN":[49.1931,-84.7589,"Hornepayne Municipal Airport","Hornepayne",0],"CYHO":[55.4488,-60.2281,"Hopedale Airport","Hopedale",0],"CYHR":[50.4689,-59.6367,"Chevery Airport","Chevery",0],"CYHT":[60.7892,-137.546,"Haines Junction Airport","Haines Junction",0],"CYHU":[45.5175,-73.4169,"Montréal / Saint-Hubert Airport","Montréal",0],"CYHY":[60.8397,-115.783,"Hay River / Merlyn Carter Airport","Hay River",0],"CYHZ":[44.8808,-63.5086,"Halifax / Stanfield International Airport","Halifax",1],"CYIB":[48.7739,-91.6386,"Atikokan Municipal Airport","Atikokan",0],"CYID":[44.5458,-65.7854,"Digby / Annapolis Regional Airport","Digby",0],"CYIF":[51.2117,-58.6583,"St Augustin Airport","St-Augustin",0],"CYIK":[62.4173,-77.9253,"Ivujivik Airport","Ivujivik",0],"CYIO":[72.6833,-77.9667,"Pond Inlet Airport","Pond Inlet",0],"CYIV":[53.8572,-94.6536,"Island Lake Airport","Island Lake",0],"CYJF":[60.2358,-123.469,"Fort Liard Airport","Fort Liard",0],"CYJN":[45.2944,-73.2811,"St Jean Airport","St Jean",0],"CYJT":[48.5442,-58.55,"Stephenville Airport","Stephenville",0],"CYKA":[50.7022,-120.444,"Kamloops Airport","Kamloops",0],"CYKD":[68.2233,-135.006,"Aklavik/Freddie Carmichael Airport","Aklavik",0],"CYKF":[43.4608,-80.3786,"Waterloo Airport","Kitchener",0],"CYKG":[61.5886,-71.9294,"Kangiqsujuaq (Wakeham Bay) Airport","Kangiqsujuaq",0],"CYKJ":[57.2561,-105.618,"Key Lake Airport","Key Lake",0],"CYKL":[54.8053,-66.8053,"Schefferville Airport","Schefferville",0],"CYKO":[60.8186,-78.1486,"Akulivik Airport","Akulivik",0],"CYKQ":[51.4733,-78.7583,"Waskaganish Airport","Waskaganish",0],"CYKX":[48.2103,-79.9814,"Kirkland Lake Airport","Kirkland Lake",0],"CYKY":[51.5175,-109.181,"Kindersley Airport","Kindersley",0],"CYKZ":[43.8622,-79.37,"Buttonville Municipal Airport","Toronto",0],"CYLA":[59.2967,-69.5997,"Aupaluk Airport","Aupaluk",0],"CYLC":[62.8483,-69.8779,"Kimmirut Airport","Kimmirut",0],"CYLD":[47.82,-83.3467,"Chapleau Airport","Chapleau",0],"CYLH":[52.1956,-87.9342,"Lansdowne House Airport","Lansdowne House",0],"CYLJ":[54.1253,-108.523,"Meadow Lake Airport","Meadow Lake",0],"CYLK":[62.4183,-110.682,"Lutselk'e Airport","Lutselk'e",0],"CYLL":[53.3092,-110.073,"Lloydminster Airport","Lloydminster",0],"CYLR":[56.5133,-99.9853,"Leaf Rapids Airport","Leaf Rapids",0],"CYLT":[82.5178,-62.2806,"Alert Airport","Alert",0],"CYLU":[58.7114,-65.9928,"Kangiqsualujjuaq (Georges River) Airport","Kangiqsualujjuaq",0],"CYLW":[49.9561,-119.378,"Kelowna International Airport","Kelowna",0],"CYMA":[63.6164,-135.868,"Mayo Airport","Mayo",0],"CYME":[48.8569,-67.4533,"Matane Airport","Matane",0],"CYMG":[49.0839,-85.8606,"Manitouwadge Airport","Manitouwadge",0],"CYMH":[52.3028,-55.8476,"Mary's Harbour Airport","Mary's Harbour",0],"CYMJ":[50.3303,-105.559,"Moose Jaw Air Vice Marshal C. M. McEwen Airport","Moose Jaw",0],"CYML":[47.5975,-70.2239,"Charlevoix Airport","Charlevoix",0],"CYMM":[56.6533,-111.222,"Fort McMurray Airport","Fort McMurray",0],"CYMO":[51.2911,-80.6078,"Moosonee Airport","Moosonee",0],"CYMT":[49.7719,-74.5281,"Chapais Airport","Chibougamau",0],"CYMU":[56.5361,-76.5183,"Umiujaq Airport","Umiujaq",0],"CYMX":[45.6795,-74.0387,"Montreal International (Mirabel) Airport","Montréal",0],"CYNA":[50.19,-61.7892,"Natashquan Airport","Natashquan",0],"CYNC":[53.0106,-78.8311,"Wemindji Airport","Wemindji",0],"CYND":[45.5217,-75.5636,"Ottawa / Gatineau Airport","Gatineau",0],"CYNE":[53.9583,-97.8442,"Norway House Airport","Norway House",0],"CYNL":[58.2767,-104.082,"Points North Landing Airport","Points North Landing",0],"CYNM":[49.7617,-77.8028,"Matagami Airport","Matagami",0],"CYNN":[59.4875,-97.7803,"Nejanilini Lake Airport","Nejanilini Lake",0],"CYOA":[64.6989,-110.615,"Ekati Airport","Ekati",0],"CYOC":[67.5706,-139.839,"Old Crow Airport","Old Crow",0],"CYOD":[54.405,-110.279,"CFB Cold Lake","Cold Lake",0],"CYOH":[54.9333,-95.2789,"Oxford House Airport","Oxford House",0],"CYOJ":[58.6214,-117.165,"High Level Airport","High Level",0],"CYOO":[43.9228,-78.895,"Oshawa Executive Airport","Oshawa",0],"CYOP":[58.4914,-119.408,"Rainbow Lake Airport","Rainbow Lake",0],"CYOS":[44.5903,-80.8375,"Owen Sound / Billy Bishop Regional Airport","Owen Sound",0],"CYOW":[45.3225,-75.6692,"Ottawa Macdonald-Cartier International Airport","Ottawa",1],"CYPA":[53.2142,-105.673,"Prince Albert Glass Field","Prince Albert",0],"CYPC":[69.3608,-124.0755,"Paulatuk (Nora Aliqatchialuk Ruben) Airport","Paulatuk",0],"CYPD":[45.6567,-61.3681,"Port Hawkesbury Airport","Port Hawkesbury",0],"CYPE":[56.2269,-117.447,"Peace River Airport","Peace River",0],"CYPG":[49.9031,-98.2738,"Portage-la-Prairie / Southport Airport","Portage la Prairie",0],"CYPH":[58.4719,-78.0769,"Inukjuak Airport","Inukjuak",0],"CYPL":[51.4464,-90.2142,"Pickle Lake Airport","Pickle Lake",0],"CYPM":[51.8197,-93.9733,"Pikangikum Airport","Pikangikum",0],"CYPN":[49.8364,-64.2886,"Port Menier Airport","Port-Menier",0],"CYPO":[54.9881,-85.4433,"Peawanuck Airport","Peawanuck",0],"CYPQ":[44.23,-78.3633,"Peterborough Municipal Airport","Peterborough",0],"CYPR":[54.2861,-130.445,"Prince Rupert Airport","Prince Rupert",0],"CYPW":[49.8342,-124.5,"Powell River Airport","Powell River",0],"CYPX":[60.0506,-77.2869,"Puvirnituq Airport","Puvirnituq",0],"CYPY":[58.7672,-111.117,"Fort Chipewyan Airport","Fort Chipewyan",0],"CYPZ":[54.3764,-125.951,"Burns Lake Airport","Burns Lake",0],"CYQA":[44.9747,-79.3033,"Muskoka Airport","Muskoka",0],"CYQB":[46.7911,-71.3933,"Quebec Jean Lesage International Airport","Quebec",1],"CYQD":[53.9714,-101.091,"The Pas Airport","The Pas",0],"CYQF":[52.1822,-113.894,"Red Deer Regional Airport","Springbrook",0],"CYQG":[42.2756,-82.9556,"Windsor Airport","Windsor",0],"CYQH":[60.1164,-128.822,"Watson Lake Airport","Watson Lake",0],"CYQI":[43.8269,-66.0881,"Yarmouth Airport","Yarmouth",0],"CYQK":[49.7883,-94.3631,"Kenora Airport","Kenora",0],"CYQL":[49.6303,-112.8,"Lethbridge County Airport","Lethbridge",0],"CYQM":[46.1122,-64.6786,"Greater Moncton Roméo LeBlanc International Airport","Moncton",0],"CYQN":[50.1828,-86.6964,"Nakina Airport","Nakina",0],"CYQQ":[49.7108,-124.887,"Comox Valley Airport / CFB Comox","Comox",0],"CYQR":[50.4319,-104.666,"Regina International Airport","Regina",0],"CYQS":[42.77,-81.1108,"St Thomas Municipal Airport","St Thomas",0],"CYQT":[48.3719,-89.3239,"Thunder Bay Airport","Thunder Bay",0],"CYQU":[55.1797,-118.885,"Grande Prairie Airport","Grande Prairie",0],"CYQV":[51.2647,-102.462,"Yorkton Municipal Airport","Yorkton",0],"CYQW":[52.7694,-108.2437,"North Battleford Airport","North Battleford",0],"CYQX":[48.9363,-54.5677,"Gander International Airport / CFB Gander","Gander",0],"CYQY":[46.1614,-60.0478,"Sydney / J.A. Douglas McCurdy Airport","Sydney",0],"CYQZ":[53.0261,-122.51,"Quesnel Airport","Quesnel",0],"CYRA":[64.1161,-117.31,"Rae Lakes Airport","Gamètì",0],"CYRB":[74.7169,-94.9694,"Resolute Bay Airport","Resolute Bay",0],"CYRI":[47.7644,-69.5847,"Rivière-du-Loup Airport","Rivière-du-Loup",0],"CYRJ":[48.52,-72.2656,"Roberval Airport","Roberval",0],"CYRL":[51.0669,-93.7931,"Red Lake Airport","Red Lake",0],"CYRO":[45.4603,-75.6461,"Ottawa / Rockcliffe Airport","Ottawa",0],"CYRP":[45.3192,-76.0222,"Ottawa / Carp Airport","Ottawa",0],"CYRQ":[46.3528,-72.6794,"Trois-Rivières Airport","Trois-Rivières",0],"CYRS":[54.1672,-93.5572,"Red Sucker Lake Airport","Red Sucker Lake",0],"CYRT":[62.8114,-92.1158,"Rankin Inlet Airport","Rankin Inlet",0],"CYRV":[50.9622,-118.1843,"Revelstoke Airport","Revelstoke",0],"CYSB":[46.625,-80.7989,"Sudbury Airport","Sudbury",0],"CYSC":[45.4386,-71.6914,"Sherbrooke Airport","Sherbrooke",0],"CYSF":[59.2503,-105.841,"Stony Rapids Airport","Stony Rapids",0],"CYSG":[46.0964,-70.7147,"Saint-Georges Airport","Saint-Georges",0],"CYSH":[44.9458,-75.9406,"Smiths Falls-Montague (Russ Beach) Airport","Smiths Falls",0],"CYSJ":[45.3161,-65.8903,"Saint John Airport","Saint John",0],"CYSK":[56.5378,-79.2467,"Sanikiluaq Airport","Sanikiluaq",0],"CYSL":[47.1571,-67.8362,"Saint-Léonard Airport","Saint-Léonard",0],"CYSM":[60.0203,-111.962,"Fort Smith Airport","Fort Smith",0],"CYSN":[43.1917,-79.1717,"Niagara District Airport","St Catharines",0],"CYSP":[48.7553,-86.3444,"Marathon Airport","Marathon",0],"CYSQ":[59.5767,-133.669,"Atlin Airport","Atlin",0],"CYST":[53.8456,-94.8519,"St. Theresa Point Airport","St. Theresa Point",0],"CYSU":[46.4406,-63.8336,"Summerside Airport","Slemon Park",0],"CYSY":[71.9939,-125.243,"Sachs Harbour (David Nasogaluak Jr. Saaryuaq) Airport","Sachs Harbour",0],"CYTA":[45.8644,-77.2517,"Pembroke Airport","Pembroke",0],"CYTE":[64.23,-76.5267,"Cape Dorset Airport","Kinngait",0],"CYTF":[48.5089,-71.6419,"Alma Airport","Alma",0],"CYTH":[55.8011,-97.8642,"Thompson Airport","Thompson",0],"CYTL":[53.8178,-89.8969,"Big Trout Lake Airport","Big Trout Lake",0],"CYTQ":[58.6678,-69.9558,"Tasiujaq Airport","Tasiujaq",0],"CYTR":[44.1189,-77.5281,"CFB Trenton","Trenton",0],"CYTS":[48.5697,-81.3767,"Timmins/Victor M. Power","Timmins",0],"CYTZ":[43.6275,-79.3962,"Billy Bishop Toronto City Centre Airport","Toronto",0],"CYUB":[69.4333,-133.026,"Tuktoyaktuk / James Gruben Airport","Tuktoyaktuk",0],"CYUL":[45.4706,-73.7408,"Montreal / Pierre Elliott Trudeau International Airport","Montréal",1],"CYUT":[66.5214,-86.2247,"Naujaat Airport","Repulse Bay",0],"CYUX":[68.7761,-81.2425,"Hall Beach Airport","Sanirajak",0],"CYUY":[48.2061,-78.8356,"Rouyn Noranda Airport","Rouyn-Noranda",0],"CYVB":[48.0711,-65.4603,"Bonaventure Airport","Bonaventure",0],"CYVC":[55.1514,-105.262,"La Ronge Airport","La Ronge",0],"CYVD":[49.8783,-100.918,"Virden / RJ (Bob) Andrew Field Regional Aerodrome","Virden",0],"CYVK":[50.2481,-119.331,"Vernon Airport","Vernon",0],"CYVM":[67.5462,-64.0318,"Qikiqtarjuaq Airport","Qikiqtarjuaq",0],"CYVO":[48.0533,-77.7828,"Val-d'Or Airport","Val-d'Or",0],"CYVP":[58.0961,-68.4269,"Kuujjuaq Airport","Kuujjuaq",0],"CYVQ":[65.2816,-126.798,"Norman Wells Airport","Norman Wells",0],"CYVR":[49.1939,-123.184,"Vancouver International Airport","Vancouver",1],"CYVV":[44.7458,-81.1072,"Wiarton Airport","Wiarton",0],"CYVZ":[52.6558,-94.0614,"Deer Lake Airport","Deer Lake",0],"CYWA":[45.9522,-77.3192,"Petawawa Airport","Petawawa",0],"CYWG":[49.91,-97.2399,"Winnipeg / James Armstrong Richardson International Airport","Winnipeg",1],"CYWJ":[65.2111,-123.436,"Déline Airport","Déline",0],"CYWK":[52.9219,-66.8644,"Wabush Airport","Wabush",0],"CYWL":[52.1831,-122.054,"Williams Lake Airport","Williams Lake",0],"CYWP":[52.9594,-87.3749,"Webequie Airport","Webequie",0],"CYWY":[63.2094,-123.437,"Wrigley Airport","Wrigley",0],"CYXC":[49.6108,-115.782,"Cranbrook/Canadian Rockies International Airport","Cranbrook",0],"CYXE":[52.1708,-106.7,"Saskatoon John G. Diefenbaker International Airport","Saskatoon",0],"CYXH":[50.0189,-110.721,"Medicine Hat Regional Airport","Medicine Hat",0],"CYXJ":[56.2381,-120.74,"Fort St John Airport","Fort St.John",0],"CYXK":[48.4781,-68.4969,"Rimouski Airport","Rimouski",0],"CYXL":[50.1139,-91.9053,"Sioux Lookout Airport","Sioux Lookout",0],"CYXN":[62.24,-92.5981,"Whale Cove Airport","Whale Cove",0],"CYXP":[66.145,-65.7136,"Pangnirtung Airport","Pangnirtung",0],"CYXQ":[62.4103,-140.867,"Beaver Creek Airport","Beaver Creek",0],"CYXR":[47.6974,-79.8473,"Earlton (Timiskaming Regional) Airport","Earlton",0],"CYXS":[53.8843,-122.6666,"Prince George Airport","Prince George",1],"CYXT":[54.4685,-128.576,"Northwest Regional Airport Terrace-Kitimat","Terrace",0],"CYXU":[43.0356,-81.1539,"London Airport","London",0],"CYXX":[49.0253,-122.361,"Abbotsford International Airport","Abbotsford",1],"CYXY":[60.7096,-135.067,"Whitehorse / Erik Nielsen International Airport","Whitehorse",0],"CYXZ":[47.9667,-84.7867,"Wawa Airport","Wawa",0],"CYYB":[46.3636,-79.4228,"North Bay Jack Garland Airport","North Bay",0],"CYYC":[51.1139,-114.02,"Calgary International Airport","Calgary",1],"CYYD":[54.8247,-127.183,"Smithers Airport","Smithers",0],"CYYE":[58.8364,-122.597,"Fort Nelson Airport","Fort Nelson",0],"CYYF":[49.4631,-119.602,"Penticton Airport","Penticton",0],"CYYG":[46.29,-63.1211,"Charlottetown Airport","Charlottetown",0],"CYYH":[69.5467,-93.5767,"Taloyoak Airport","Taloyoak",0],"CYYJ":[48.6469,-123.426,"Victoria International Airport","Victoria",1],"CYYL":[56.8639,-101.076,"Lynn Lake Airport","Lynn Lake",0],"CYYN":[50.2919,-107.691,"Swift Current Airport","Swift Current",0],"CYYQ":[58.7392,-94.065,"Churchill Airport","Churchill",0],"CYYR":[53.3192,-60.4258,"Goose Bay Airport","Goose Bay",0],"CYYT":[47.6186,-52.7519,"St. John's International Airport","St. John's",1],"CYYU":[49.4139,-82.4675,"Kapuskasing Airport","Kapuskasing",0],"CYYW":[50.2903,-88.9097,"Armstrong Airport","Armstrong",0],"CYYY":[48.6086,-68.2081,"Mont Joli Airport","Mont-Joli",0],"CYYZ":[43.6772,-79.6306,"Lester B. Pearson International Airport","Toronto",1],"CYZD":[43.7425,-79.4656,"Downsview Airport","Toronto",0],"CYZE":[45.8853,-82.5678,"Gore Bay Manitoulin Airport","Gore Bay",0],"CYZF":[62.4628,-114.44,"Yellowknife International Airport","Yellowknife",0],"CYZG":[62.1794,-75.6672,"Salluit Airport","Salluit",0],"CYZH":[55.2931,-114.777,"Slave Lake Airport","Slave Lake",0],"CYZP":[53.2543,-131.814,"Sandspit Airport","Sandspit",0],"CYZR":[42.9994,-82.3089,"Chris Hadfield Airport","Sarnia",0],"CYZS":[64.1933,-83.3594,"Coral Harbour Airport","Coral Harbour",0],"CYZT":[50.6806,-127.367,"Port Hardy Airport","Port Hardy",0],"CYZU":[54.1439,-115.787,"Whitecourt Airport","Whitecourt",0],"CYZV":[50.2233,-66.2656,"Sept-Îles Airport","Sept-Îles",0],"CYZW":[60.1728,-132.743,"Teslin Airport","Teslin",0],"CYZX":[44.9844,-64.9169,"CFB Greenwood","Greenwood",0],"CYZY":[55.3044,-123.132,"Mackenzie Airport","Mackenzie",0],"CZAC":[56.0894,-96.0892,"York Landing Airport","York Landing",0],"CZAM":[50.6828,-119.229,"Shuswap Regional Airport","Salmon Arm",0],"CZBB":[49.0742,-123.012,"Boundary Bay Airport","Delta",0],"CZBD":[56.0516,-95.6205,"Ilford Airport","Ilford",0],"CZBF":[47.6297,-65.7389,"Bathurst Airport","South Tetagouche",0],"CZBM":[45.2908,-72.7414,"Bromont (Roland Désourdy) Airport","Bromont",0],"CZEE":[56.0375,-96.5097,"Kelsey Airport","Kelsey",0],"CZEM":[52.2264,-78.5225,"Eastmain River Airport","Eastmain River",0],"CZFA":[62.2075,-133.376,"Faro Airport","Faro",0],"CZFD":[59.3344,-107.182,"Fond-Du-Lac Airport","Fond-Du-Lac",0],"CZFG":[55.7492,-101.266,"Pukatawagan Airport","Pukatawagan",0],"CZFM":[67.4075,-134.861,"Fort Mcpherson Airport","Fort Mcpherson",0],"CZFN":[64.9097,-125.573,"Tulita Airport","Tulita",0],"CZGF":[49.0156,-118.431,"Grand Forks Airport","Grand Forks",0],"CZGI":[54.8397,-94.0786,"Gods River Airport","Gods River",0],"CZGR":[52.0456,-95.4658,"Little Grand Rapids Airport","Little Grand Rapids",0],"CZJG":[54.5189,-98.0461,"Jenpeg Airport","Jenpeg",0],"CZJN":[52.1206,-101.236,"Swan River Airport","Swan River",0],"CZKE":[52.2825,-81.6778,"Kashechewan Airport","Kashechewan",0],"CZLQ":[55.3189,-97.7078,"Thicket Portage Airport","Thicket Portage",0],"CZMD":[53.4414,-91.7628,"Muskrat Dam Airport","Muskrat Dam",0],"CZMN":[55.5889,-97.1642,"Pikwitonei Airport","Pikwitonei",0],"CZMT":[54.0275,-132.125,"Masset Airport","Masset",0],"CZNG":[52.9965,-97.2742,"Poplar River Airport","Poplar River",0],"CZPB":[53.8911,-92.1964,"Sachigo Lake Airport","Sachigo Lake",0],"CZPC":[49.5206,-113.997,"Pincher Creek Airport","Pincher Creek",0],"CZRJ":[52.9436,-91.3128,"Round Lake (Weagamow Lake) Airport","Round Lake",0],"CZSJ":[53.0642,-93.3444,"Sandy Lake Airport","Sandy Lake",0],"CZSN":[56.7928,-98.9072,"South Indian Lake Airport","South Indian Lake",0],"CZST":[55.9354,-129.9824,"Stewart Airport","Stewart",0],"CZTM":[55.8656,-92.0814,"Shamattawa Airport","Shamattawa",0],"CZUC":[49.4282,-91.7204,"Ignace Municipal Airport","Ignace",0],"CZWH":[58.6175,-101.469,"Lac Brochet Airport","Lac Brochet",0],"CZWL":[58.1069,-103.172,"Wollaston Lake Airport","Wollaston Lake",0],"KABE":[40.6518,-75.4428,"Lehigh Valley International Airport","Allentown",0],"KACK":[41.2531,-70.0602,"Nantucket Memorial Airport","Nantucket",0],"KACY":[39.4576,-74.5772,"Atlantic City International Airport","Atlantic City",0],"KADW":[38.8108,-76.867,"Joint Base Andrews","Camp Springs",1],"KAGC":[40.3544,-79.9302,"Allegheny County Airport","Pittsburgh",0],"KAKR":[41.0375,-81.4669,"Akron Executive Airport","Akron",0],"KALB":[42.7483,-73.8017,"Albany International Airport","Albany",0],"KALN":[38.8903,-90.046,"St Louis Regional Airport","Alton/St Louis",0],"KALO":[42.5571,-92.4003,"Waterloo Regional Airport","Waterloo",0],"KAOO":[40.2964,-78.32,"Altoona Blair County Airport","Altoona",0],"KAPG":[39.4662,-76.1688,"Phillips Army Air Field","Aberdeen Proving Grounds(Aberdeen)",0],"KAPN":[45.0781,-83.5603,"Alpena County Regional Airport","Alpena",0],"KART":[43.9919,-76.0217,"Watertown International Airport","Watertown",0],"KAUG":[44.3206,-69.7973,"Augusta State Airport","Augusta",0],"KAUW":[44.9262,-89.6266,"Wausau Downtown Airport","Wausau",0],"KAVP":[41.3385,-75.7234,"Wilkes Barre Scranton International Airport","Wilkes-Barre/Scranton",0],"KAZO":[42.2349,-85.5521,"Kalamazoo Battle Creek International Airport","Kalamazoo",0],"KBAF":[42.1578,-72.7156,"Westfield-Barnes Regional Airport","Westfield",0],"KBAK":[39.2624,-85.8956,"Columbus Municipal Airport","Columbus",0],"KBDE":[48.7284,-94.6122,"Baudette International Airport","Baudette",0],"KBDL":[41.9385,-72.6881,"Bradley International Airport","Hartford",0],"KBDR":[41.1635,-73.1262,"Igor I Sikorsky Memorial Airport","Bridgeport",0],"KBED":[42.47,-71.289,"Laurence G Hanscom Field","Bedford",0],"KBFD":[41.8031,-78.6401,"Bradford Regional Airport","Bradford",0],"KBGM":[42.2087,-75.9798,"Greater Binghamton/Edwin A Link field","Binghamton",0],"KBGR":[44.8074,-68.8281,"Bangor International Airport","Bangor",0],"KBHB":[44.45,-68.3615,"Hancock County-Bar Harbor Airport","Bar Harbor",0],"KBJI":[47.5094,-94.9337,"Bemidji Regional Airport","Bemidji",0],"KBKL":[41.5175,-81.6833,"Burke Lakefront Airport","Cleveland",0],"KBLV":[38.5452,-89.8352,"Scott AFB/Midamerica Airport","Belleville",0],"KBMG":[39.146,-86.6167,"Monroe County Airport","Bloomington",0],"KBMI":[40.4771,-88.9159,"Central Illinois Regional Airport at Bloomington-Normal","Bloomington/Normal",0],"KBOS":[42.3643,-71.0052,"Logan International Airport","Boston",1],"KBRD":[46.4029,-94.1297,"Brainerd Lakes Regional Airport","Brainerd",0],"KBRL":[40.7832,-91.1255,"Southeast Iowa Regional Airport","Burlington",0],"KBTL":[42.3073,-85.2515,"Battle Creek Executive Airport at Kellogg Field","Battle Creek",0],"KBTV":[44.4719,-73.1533,"Burlington International Airport","South Burlington",0],"KBUF":[42.9405,-78.7322,"Buffalo Niagara International Airport","Buffalo",1],"KBVI":[40.7725,-80.3914,"Beaver County Airport","Beaver Falls",0],"KBVY":[42.5842,-70.9165,"Beverly Regional Airport","Beverly / Danvers",0],"KBWI":[39.1754,-76.6683,"Baltimore/Washington International Thurgood Marshall Airport","Baltimore",1],"KCAK":[40.9161,-81.4422,"Akron Canton Regional Airport","Akron",0],"KCAR":[46.8715,-68.0179,"Caribou Municipal Airport","Caribou",0],"KCCY":[43.0726,-92.6108,"Northeast Iowa Regional Airport","Charles City",0],"KCEF":[42.194,-72.5348,"Westover Metropolitan Airport / Westover Air Reserve Base","Chicopee",0],"KCGF":[41.5651,-81.4864,"Cuyahoga County Airport","Cleveland",0],"KCHO":[38.1386,-78.4529,"Charlottesville Albemarle Airport","Charlottesville",0],"KCID":[41.8847,-91.7108,"The Eastern Iowa Airport","Cedar Rapids",0],"KCIU":[46.2508,-84.4724,"Chippewa County International Airport","Sault Ste Marie",0],"KCKB":[39.2966,-80.2281,"North Central West Virginia Airport","Bridgeport",0],"KCLE":[41.4117,-81.8498,"Cleveland Hopkins International Airport","Cleveland",1],"KCMH":[39.998,-82.8919,"John Glenn Columbus International Airport","Columbus",1],"KCMI":[40.0398,-88.2762,"University of Illinois Willard Airport","Savoy",0],"KCMX":[47.1684,-88.4891,"Houghton County Memorial Airport","Hancock",0],"KCON":[43.2027,-71.5023,"Concord Municipal Airport","Concord",0],"KCOU":[38.8181,-92.2196,"Columbia Regional Airport","Columbia",0],"KCRW":[38.3731,-81.5932,"Yeager Airport","Charleston",0],"KCVG":[39.0488,-84.6678,"Cincinnati Northern Kentucky International Airport","Cincinnati / Covington",1],"KCWA":[44.7776,-89.6668,"Central Wisconsin Airport","Mosinee",0],"KDAA":[38.715,-77.181,"Davison Army Air Field","Fort Belvoir",0],"KDAY":[39.9024,-84.2194,"James M Cox Dayton International Airport","Dayton",0],"KDBQ":[42.402,-90.7095,"Dubuque Regional Airport","Dubuque",0],"KDCA":[38.8521,-77.0377,"Ronald Reagan Washington National Airport","Washington",1],"KDEC":[39.8346,-88.8657,"Decatur Airport","Decatur",0],"KDET":[42.4092,-83.0099,"Coleman A. Young Municipal Airport","Detroit",0],"KDLH":[46.8421,-92.1936,"Duluth International Airport","Duluth",0],"KDOV":[39.1295,-75.466,"Dover Air Force Base","Dover",0],"KDPA":[41.9078,-88.2486,"Dupage Airport","Chicago/West Chicago",0],"KDSM":[41.534,-93.6631,"Des Moines International Airport","Des Moines",0],"KDTW":[42.2124,-83.3534,"Detroit Metropolitan Wayne County Airport","Detroit",1],"KDUJ":[41.1783,-78.8987,"DuBois Regional Airport","Dubois",0],"KEAU":[44.8658,-91.4843,"Chippewa Valley Regional Airport","Eau Claire",0],"KEEN":[42.8984,-72.2708,"Dillant Hopkins Airport","Keene",0],"KEKN":[38.8898,-79.8577,"Elkins-Randolph County Regional Airport","Elkins",0],"KELM":[42.1599,-76.8916,"Elmira Corning Regional Airport","Elmira/Corning",0],"KELO":[47.8245,-91.8307,"Ely Municipal Airport","Ely",0],"KENW":[42.5957,-87.9278,"Kenosha Regional Airport","Kenosha",0],"KERI":[42.0831,-80.1739,"Erie International Tom Ridge Field","Erie",0],"KEVV":[38.037,-87.5324,"Evansville Regional Airport","Evansville",0],"KEWB":[41.6761,-70.9569,"New Bedford Regional Airport","New Bedford",0],"KEWR":[40.6925,-74.1687,"Newark Liberty International Airport","Newark",1],"KFDY":[41.0135,-83.6687,"Findlay Airport","Findlay",0],"KFFO":[39.8261,-84.0483,"Wright-Patterson Air Force Base","Dayton",0],"KFKL":[41.3779,-79.8604,"Venango Regional Airport","Franklin",0],"KFME":[39.0854,-76.7594,"Tipton Airport","Fort Meade(Odenton)",0],"KFNT":[42.9654,-83.7436,"Bishop International Airport","Flint",0],"KFOD":[42.5515,-94.1926,"Fort Dodge Regional Airport","Fort Dodge",0],"KFRG":[40.7288,-73.4134,"Republic Airport","Farmingdale",0],"KFWA":[40.9785,-85.1951,"Fort Wayne International Airport","Fort Wayne",0],"KGFL":[43.3412,-73.6103,"Floyd Bennett Memorial Airport","Glens Falls",0],"KGON":[41.3301,-72.0451,"Groton New London Airport","Groton",0],"KGRB":[44.4835,-88.1308,"Austin Straubel International Airport","Green Bay",0],"KGRR":[42.8808,-85.5228,"Gerald R. Ford International Airport","Grand Rapids",0],"KGTB":[44.0556,-75.7195,"Wheeler Sack Army Air Field","Fort Drum",0],"KGUS":[40.6481,-86.1521,"Grissom Air Reserve Base","Peru",0],"KGYY":[41.6163,-87.4128,"Gary Chicago International Airport","Gary",0],"KHFD":[41.7367,-72.6494,"Hartford Brainard Airport","Hartford",0],"KHGR":[39.7079,-77.7295,"Hagerstown Regional Richard A Henson Field","Hagerstown",0],"KHIB":[47.3866,-92.839,"Range Regional Airport","Hibbing",0],"KHLG":[40.175,-80.6463,"Wheeling Ohio County Airport","Wheeling",0],"KHPN":[41.067,-73.7076,"Westchester County Airport","White Plains",0],"KHTS":[38.3667,-82.558,"Tri-State Airport / Milton J. Ferguson Field","Huntington",0],"KHUF":[39.4515,-87.3076,"Terre Haute Regional Airport, Hulman Field","Terre Haute",0],"KHUL":[46.1231,-67.7921,"Houlton International Airport","Houlton",0],"KHVN":[41.2637,-72.8868,"Tweed New Haven Airport","New Haven",0],"KHYA":[41.6693,-70.2804,"Cape Cod Gateway Airport","Hyannis",0],"KHYR":[46.0252,-91.4443,"Sawyer County Airport","Hayward",0],"KHZY":[41.778,-80.6955,"Northeast Ohio Regional Airport","Ashtabula",0],"KIAD":[38.9445,-77.4558,"Washington Dulles International Airport","Dulles",1],"KIAG":[43.1073,-78.9462,"Niagara Falls International Airport","Niagara Falls",0],"KIKK":[41.0714,-87.8463,"Greater Kankakee Airport","Kankakee",0],"KILG":[39.6787,-75.6065,"New Castle Airport","Wilmington",0],"KILN":[39.4279,-83.7921,"Wilmington Airpark","Wilmington",0],"KIND":[39.7173,-86.2944,"Indianapolis International Airport","Indianapolis",1],"KINL":[48.5662,-93.4031,"Falls International Airport","International Falls",0],"KIPT":[41.2418,-76.9211,"Williamsport Regional Airport","Williamsport",0],"KIRK":[40.0935,-92.5449,"Kirksville Regional Airport","Kirksville",0],"KISP":[40.7952,-73.1002,"Long Island Mac Arthur Airport","Islip",0],"KITH":[42.491,-76.4584,"Ithaca Tompkins Regional Airport","Ithaca",0],"KJFK":[40.6394,-73.7793,"John F Kennedy International Airport","New York",1],"KJHW":[42.1542,-79.254,"Chautauqua County-Jamestown Airport","Jamestown",0],"KJST":[40.3161,-78.8339,"John Murtha Johnstown Cambria County Airport","Johnstown",0],"KJXN":[42.2605,-84.463,"Jackson County Airport/Reynolds Field","Jackson",0],"KLAF":[40.4123,-86.9369,"Purdue University Airport","West Lafayette",0],"KLAN":[42.7787,-84.5874,"Capital City Airport","Lansing",0],"KLBE":[40.2759,-79.4048,"Arnold Palmer Regional Airport","Latrobe",0],"KLCK":[39.8138,-82.9278,"Rickenbacker International Airport","Columbus",0],"KLEB":[43.6261,-72.3042,"Lebanon Municipal Airport","Lebanon",0],"KLEX":[38.0365,-84.6059,"Blue Grass Airport","Lexington",0],"KLGA":[40.7772,-73.8726,"La Guardia Airport","New York",1],"KLNS":[40.1217,-76.2961,"Lancaster Airport","Lancaster",0],"KLOU":[38.228,-85.6637,"Bowman Field","Louisville",0],"KLSE":[43.879,-91.2567,"La Crosse Regional Airport","La Crosse",0],"KLUK":[39.1033,-84.4186,"Cincinnati Municipal Airport Lunken Field","Cincinnati",0],"KLWM":[42.7172,-71.1234,"Lawrence Municipal Airport","Lawrence",0],"KMBS":[43.5329,-84.0796,"MBS International Airport","Saginaw",0],"KMCI":[39.2976,-94.7139,"Kansas City International Airport","Kansas City",1],"KMCW":[43.1578,-93.3313,"Mason City Municipal Airport","Clear Lake",0],"KMDT":[40.1935,-76.7634,"Harrisburg International Airport","Harrisburg",0],"KMDW":[41.786,-87.7524,"Chicago Midway International Airport","Chicago",1],"KMFD":[40.8214,-82.5166,"Mansfield Lahm Regional Airport","Mansfield",0],"KMGW":[39.6433,-79.9176,"Morgantown Municipal Airport Walter L. (Bill) Hart Field","Morgantown",0],"KMHT":[42.9326,-71.4357,"Manchester-Boston Regional Airport","Manchester",0],"KMIE":[40.2423,-85.3959,"Delaware County Johnson Field","Muncie",0],"KMIV":[39.3678,-75.0722,"Millville Municipal Airport","Millville",0],"KMKC":[39.1232,-94.5928,"Charles B. Wheeler Downtown Airport","Kansas City",0],"KMKE":[42.9472,-87.8966,"General Mitchell International Airport","Milwaukee",1],"KMKG":[43.1695,-86.2382,"Muskegon County Airport","Muskegon",0],"KMLI":[41.4485,-90.5075,"Quad City International Airport","Moline",0],"KMMU":[40.7994,-74.4149,"Morristown Municipal Airport","Morristown",0],"KMPV":[44.2035,-72.5623,"Edward F Knapp State Airport","Barre/Montpelier",0],"KMRB":[39.4019,-77.9846,"Eastern WV Regional Airport/Shepherd Field","Martinsburg",0],"KMSN":[43.1399,-89.3375,"Dane County Regional Truax Field","Madison",0],"KMSP":[44.882,-93.2218,"Minneapolis–Saint Paul International Airport / Wold–Chamberlain Field","Minneapolis",1],"KMSS":[44.9362,-74.8443,"Massena International Airport Richards Field","Massena",0],"KMTC":[42.6135,-82.8369,"Selfridge Air National Guard Base Airport","Mount Clemens",0],"KMTN":[39.3257,-76.4138,"Martin State Airport","Baltimore",0],"KMUI":[40.4352,-76.5687,"Muir Army Air Field (Fort Indiantown Gap) Airport","Fort Indiantown Gap(Annville)",0],"KNEL":[40.0333,-74.3533,"Lakehurst Maxfield Field Airport","Lakehurst",0],"KNHK":[38.286,-76.4118,"Patuxent River Naval Air Station (Trapnell Field)","Patuxent River",0],"KNHZ":[43.8922,-69.9386,"Brunswick Executive Airport","Brunswick",0],"KNYG":[38.5017,-77.3053,"Quantico Marine Corps Airfield / Turner Field","Quantico",0],"KOQU":[41.5971,-71.4121,"Quonset State Airport","North Kingstown",0],"KORD":[41.9786,-87.9048,"Chicago O'Hare International Airport","Chicago",1],"KORH":[42.2673,-71.8757,"Worcester Regional Airport","Worcester",0],"KOSH":[43.9844,-88.557,"Wittman Regional Airport","Oshkosh",0],"KOSU":[40.0798,-83.073,"The Ohio State University Airport - Don Scott Field","Columbus",0],"KOTM":[41.1064,-92.4498,"Ottumwa Regional Airport","Ottumwa",0],"KOWD":[42.1905,-71.1729,"Norwood Memorial Airport","Norwood",0],"KPBG":[44.6509,-73.4681,"Plattsburgh International Airport","Plattsburgh",0],"KPHL":[39.8719,-75.2411,"Philadelphia International Airport","Philadelphia",1],"KPIA":[40.6642,-89.6933,"General Wayne A. Downing Peoria International Airport","Peoria",0],"KPIT":[40.4915,-80.2329,"Pittsburgh International Airport","Pittsburgh",1],"KPKB":[39.3451,-81.4392,"Mid Ohio Valley Regional Airport","Parkersburg",0],"KPLN":[45.5709,-84.7967,"Pellston Regional Airport of Emmet County Airport","Pellston",0],"KPNE":[40.0819,-75.0106,"Northeast Philadelphia Airport","Philadelphia",0],"KPOU":[41.6266,-73.8842,"Dutchess County Airport","Poughkeepsie",0],"KPQI":[46.689,-68.0448,"Presque Isle International Airport","Presque Isle",0],"KPSM":[43.0779,-70.8233,"Portsmouth International at Pease Airport","Portsmouth",0],"KPTK":[42.6655,-83.4201,"Oakland County International Airport","Pontiac",0],"KPVD":[41.725,-71.4257,"Theodore Francis Green State Airport","Warwick",1],"KPWK":[42.1142,-87.9015,"Chicago Executive Airport","Chicago/Prospect Heights/Wheeling",0],"KPWM":[43.6462,-70.3093,"Portland International Jetport","Portland",1],"KRDG":[40.3785,-75.9652,"Reading Regional Airport (Carl A Spaatz Field)","Reading",0],"KRFD":[42.1954,-89.0972,"Chicago Rockford International Airport","Chicago/Rockford",0],"KRHI":[45.6312,-89.4675,"Rhinelander Oneida County Airport","Rhinelander",0],"KRME":[43.2338,-75.407,"Griffiss International Airport","Rome",0],"KRNH":[45.1483,-92.5381,"New Richmond Regional Airport","New Richmond",0],"KROC":[43.1189,-77.6724,"Frederick Douglass Greater Rochester International Airport","Rochester",0],"KRST":[43.9083,-92.5,"Rochester International Airport","Rochester",0],"KRUT":[43.5294,-72.9496,"Rutland - Southern Vermont Regional Airport","Rutland",0],"KSAW":[46.3536,-87.3954,"Sawyer International Airport","Gwinn",0],"KSBN":[41.7087,-86.3173,"South Bend Regional Airport","South Bend",0],"KSBY":[38.3405,-75.5103,"Salisbury Ocean City Wicomico Regional Airport","Salisbury",0],"KSCH":[42.8525,-73.9289,"Schenectady County Airport","Schenectady",0],"KSDF":[38.1744,-85.736,"Louisville Muhammad Ali International Airport","Louisville",1],"KSGH":[39.8403,-83.8402,"Springfield-Beckley Municipal Airport","Springfield",0],"KSHD":[38.2638,-78.8964,"Shenandoah Valley Regional Airport","Weyers Cave",0],"KSLK":[44.3869,-74.2046,"Adirondack Regional Airport","Saranac Lake",0],"KSPI":[39.8441,-89.6779,"Abraham Lincoln Capital Airport","Springfield",0],"KSTC":[45.5466,-94.0599,"Saint Cloud Regional Airport","Saint Cloud",0],"KSTJ":[39.7719,-94.9097,"Rosecrans Memorial Airport","St Joseph",0],"KSTL":[38.7487,-90.37,"St Louis Lambert International Airport","St Louis",1],"KSTP":[44.9345,-93.06,"St Paul Downtown Holman Field","St Paul",0],"KSUS":[38.6621,-90.652,"Spirit of St Louis Airport","St Louis",0],"KSWF":[41.5041,-74.1048,"New York Stewart International Airport","Newburgh",0],"KSYR":[43.1112,-76.1063,"Syracuse Hancock International Airport","Syracuse",1],"KSZL":[38.7303,-93.5479,"Whiteman Air Force Base","Knob Noster",0],"KTEB":[40.8501,-74.0608,"Teterboro Airport","Teterboro",0],"KTOL":[41.5868,-83.8078,"Eugene F. Kranz Toledo Express Airport","Toledo",0],"KTTN":[40.2767,-74.8135,"Trenton Mercer Airport","Trenton",0],"KTVC":[44.7414,-85.5822,"Cherry Capital Airport","Traverse City",0],"KUIN":[39.9427,-91.1946,"Quincy Regional Baldwin Field","Quincy",0],"KUNV":[40.8494,-77.8485,"University Park Airport","State College",0],"KVOK":[43.939,-90.2534,"Volk Field","Camp Douglas",0],"KVPZ":[41.454,-87.0071,"Porter County Municipal Airport","Valparaiso",0],"KWRI":[40.0156,-74.5917,"Mc Guire Air Force Base","Wrightstown",0],"KWWD":[39.0085,-74.9083,"Cape May County Airport","Wildwood",0],"KYIP":[42.2379,-83.5304,"Willow Run Airport","Detroit",0],"KYNG":[41.2607,-80.6791,"Youngstown Warren Regional Airport","Youngstown/Warren",0],"KZZV":[39.9444,-81.8921,"Zanesville Municipal Airport","Zanesville",0],"ZHZH":[69.5482,-139.0916,"Herschel Island Field","Herschel Island (Yukon Territory)",0]};
+Object.keys(APT_X).forEach(function(k){if(!APT[k])APT[k]=APT_X[k]});
 var KEY="planvol_v1";
 var $=function(i){return document.getElementById(i)};
-var S={ac:0,cruise:110,burn:9,fuel:53,taxi:1,res:45,wd:0,ws:0,decl:14,dep:"",example:true,
+var S={ac:0,acn:"Diamond DA20-C1",cruise:115,burn:7,fuel:24,taxi:1,res:45,wd:0,ws:0,decl:14,dep:"",example:true,
  pts:[{n:"CYQB",la:APT.CYQB[0],lo:APT.CYQB[1]},{n:"CYRQ",la:APT.CYRQ[0],lo:APT.CYRQ[1]},{n:"CYHU",la:APT.CYHU[0],lo:APT.CYHU[1]}]};
-var addMode=true,clearArmed=false,clearTimer=null;
+var addMode=true,clearArmed=false,clearTimer=null,step=1,mapReady=false;
+var STEPNAMES=["Avion","Route","Conditions","Résultat"];
 
 function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
-function loadSaved(){try{var j=localStorage.getItem(KEY);if(j){var o=JSON.parse(j);if(o&&o.pts&&o.pts.length>=0&&typeof o.cruise==="number"){S=o;if(S.acn){for(var q=0;q<AIRCRAFT.length;q++)if(AIRCRAFT[q].n===S.acn)S.ac=q}else S.ac=Math.min(S.ac+1,AIRCRAFT.length-1)}}}catch(e){}}
+function loadSaved(){try{var j=localStorage.getItem(KEY);if(j){var o=JSON.parse(j);if(o&&o.pts&&typeof o.cruise==="number"){S=o;if(S.acn){for(var q=0;q<AIRCRAFT.length;q++)if(AIRCRAFT[q].n===S.acn)S.ac=q}else S.ac=Math.min(S.ac+1,AIRCRAFT.length-1)}}}catch(e){}}
 function esc(s){return String(s).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]})}
+function norm(s){return String(s).normalize("NFD").replace(/[̀-ͯ]/g,"").toLowerCase()}
 function rad(x){return x*Math.PI/180}
 function dist(a,b,c,d){var p=rad(c-a),q=rad(d-b),h=Math.sin(p/2)*Math.sin(p/2)+Math.cos(rad(a))*Math.cos(rad(c))*Math.sin(q/2)*Math.sin(q/2);return 2*3440.065*Math.asin(Math.min(1,Math.sqrt(h)))}
 function bearing(a,b,c,d){var y=Math.sin(rad(d-b))*Math.cos(rad(c)),x=Math.cos(rad(a))*Math.sin(rad(c))-Math.sin(rad(a))*Math.cos(rad(c))*Math.cos(rad(d-b));return (Math.atan2(y,x)*180/Math.PI+360)%360}
@@ -887,6 +947,24 @@ function compute(){
   return {legs:legs,tD:tD,tT:tT,trip:trip,res:res,req:req,margin:margin,endu:S.fuel/S.burn,eta:dep==null?null:dep+tT*60};
 }
 
+/* ---------- Étapes ---------- */
+function showStep(n){
+  step=n;
+  Array.prototype.forEach.call(document.querySelectorAll(".step"),function(e){e.hidden=(+e.getAttribute("data-step")!==n)});
+  Array.prototype.forEach.call($("steps").children,function(b){
+    if(+b.getAttribute("data-s")===n)b.setAttribute("aria-current","step");else b.removeAttribute("aria-current");
+  });
+  $("back").hidden=(n===1);
+  $("next").hidden=(n===4);
+  $("back").textContent="Retour : "+(n>1?STEPNAMES[n-2]:"");
+  $("next").textContent=n<4?"Suivant : "+STEPNAMES[n]:"";
+  if(n===2)setTimeout(function(){map.invalidateSize();if(!mapReady){mapReady=true;fitRoute()}},60);
+  window.scrollTo(0,0);
+}
+$("steps").addEventListener("click",function(e){var b=e.target.closest("button[data-s]");if(b)showStep(+b.getAttribute("data-s"))});
+$("back").onclick=function(){if(step>1)showStep(step-1)};
+$("next").onclick=function(){if(step<4)showStep(step+1)};
+
 /* ---------- Réglages ---------- */
 function syncInputs(){
   ["cruise","burn","fuel","taxi","res","wd","ws","decl"].forEach(function(k){$(k).value=S[k]});
@@ -910,7 +988,7 @@ AIRCRAFT.forEach(function(a,i){
 });
 $("dep").addEventListener("input",function(){S.dep=$("dep").value;refresh()});
 
-/* ---------- Points ---------- */
+/* ---------- Points et recherche ---------- */
 function parseRoute(text){
   var pts=[],bad=[];
   text.toUpperCase().split(/[\s,;]+/).filter(Boolean).forEach(function(t){
@@ -920,6 +998,18 @@ function parseRoute(text){
     else bad.push(t);
   });
   return {pts:pts,bad:bad};
+}
+var IDX=Object.keys(APT).map(function(k){var a=APT[k];return {k:k,t:norm(k+" "+a[2]+" "+a[3]),a:a}});
+function searchApt(q){
+  q=norm(q).trim();
+  if(q.length<2)return [];
+  var pre=[],inc=[];
+  IDX.forEach(function(x){
+    if(x.k.toLowerCase().indexOf(q)===0)pre.push(x);
+    else if(x.t.indexOf(q)>=0)inc.push(x);
+  });
+  inc.sort(function(a,b){return (b.a[4]||0)-(a.a[4]||0)});
+  return pre.concat(inc).slice(0,8);
 }
 function nextName(){
   var k=1,used={};S.pts.forEach(function(p){used[p.n]=1});
@@ -934,22 +1024,36 @@ function addPoint(p,at){
   S.pts.splice(at,0,p);
 }
 function structure(){S.example=false;renderPoints();refresh()}
+function addAirport(k){addPoint({n:k,la:APT[k][0],lo:APT[k][1]});structure()}
 
+$("addIn").addEventListener("input",function(){
+  var r=searchApt($("addIn").value),h="";
+  r.forEach(function(x){h+="<button type=\"button\" data-k=\""+x.k+"\"><b>"+x.k+"</b> "+esc(x.a[2])+(x.a[3]&&x.a[3]!==x.a[2]?" <span>("+esc(x.a[3])+")</span>":"")+"</button>"});
+  $("addRes").innerHTML=h;$("addErr").hidden=true;
+});
+$("addRes").addEventListener("click",function(e){
+  var b=e.target.closest("button[data-k]");if(!b)return;
+  addAirport(b.getAttribute("data-k"));$("addIn").value="";$("addRes").innerHTML="";fitRoute();
+});
 $("addBtn").onclick=addFromInput;
 $("addIn").addEventListener("keydown",function(e){if(e.key==="Enter"){e.preventDefault();addFromInput()}});
 function addFromInput(){
-  var r=parseRoute($("addIn").value),er=$("addErr");
-  if(r.bad.length){er.textContent="Point inconnu : "+r.bad.join(", ")+". Utilise un code de la liste ou lat/lon, par exemple 46.35/-72.68.";er.hidden=false;return}
-  if(!r.pts.length){er.textContent="Entre un code OACI ou des coordonnées.";er.hidden=false;return}
-  er.hidden=true;
-  r.pts.forEach(function(p){addPoint(p)});
-  $("addIn").value="";
+  var txt=$("addIn").value,r=parseRoute(txt),er=$("addErr");
+  if(!txt.trim()){er.textContent="Entre un nom, un code d’aéroport ou des coordonnées.";er.hidden=false;return}
+  if(!r.bad.length&&r.pts.length){
+    er.hidden=true;r.pts.forEach(function(p){addPoint(p)});
+  }else{
+    var s=searchApt(txt);
+    if(!s.length){er.textContent="Aucun résultat pour « "+txt.trim()+" ». Essaie un autre nom, ou entre des coordonnées comme 46.35/-72.68.";er.hidden=false;return}
+    er.hidden=true;addPoint({n:s[0].k,la:s[0].a[0],lo:s[0].a[1]});
+  }
+  $("addIn").value="";$("addRes").innerHTML="";
   structure();fitRoute();
 }
 
 function renderPoints(){
   var h="";
-  if(!S.pts.length)h="<p class=\"note\">Aucun point. Touche la carte ou ajoute un code.</p>";
+  if(!S.pts.length)h="<p class=\"note\">Aucun point. Touche la carte ou cherche un aéroport.</p>";
   S.pts.forEach(function(p,i){
     h+="<div class=\"pt\"><div class=\"n\">"+(i+1)+"</div><div><input type=\"text\" data-i=\""+i+"\" data-k=\"n\" value=\""+esc(p.n)+"\" aria-label=\"Nom du point "+(i+1)+"\" autocomplete=\"off\"><div class=\"co\">"+p.la.toFixed(4)+" / "+p.lo.toFixed(4)+"</div></div><div class=\"acts\">"
      +"<button class=\"btn\" type=\"button\" data-act=\"up\" data-i=\""+i+"\" aria-label=\"Monter\""+(i===0?" disabled":"")+">↑</button>"
@@ -978,11 +1082,29 @@ $("clear").onclick=function(){
 };
 function resetClear(){clearArmed=false;clearTimeout(clearTimer);$("clear").textContent="Tout effacer";$("clear").classList.remove("warn")}
 
+/* ---------- Vent par tronçon ---------- */
+function renderLegWinds(C){
+  if(!C.legs.length){$("lw").innerHTML="<p class=\"note\">Les tronçons apparaissent dès que la route a deux points.</p>";return}
+  var h="";
+  C.legs.forEach(function(L,i){
+    h+="<div class=\"lwrow\"><div class=\"t\">"+(i+1)+". "+esc(L.a.n)+" → "+esc(L.b.n)+"</div>"
+     +"<div><label>Vent de (°)</label><input type=\"number\" inputmode=\"decimal\" data-i=\""+i+"\" data-k=\"wd\" placeholder=\""+S.wd+"\" value=\""+(L.a.wd===undefined?"":L.a.wd)+"\"></div>"
+     +"<div><label>Vitesse (kt)</label><input type=\"number\" inputmode=\"decimal\" data-i=\""+i+"\" data-k=\"ws\" placeholder=\""+S.ws+"\" value=\""+(L.a.ws===undefined?"":L.a.ws)+"\"></div></div>";
+  });
+  $("lw").innerHTML=h;
+}
+$("lw").addEventListener("change",function(e){
+  var t=e.target,k=t.getAttribute("data-k");if(k!=="wd"&&k!=="ws")return;
+  var p=S.pts[+t.getAttribute("data-i")];if(!p)return;
+  if(t.value===""||isNaN(+t.value))delete p[k];else p[k]=+t.value;
+  refresh();
+});
+
 /* ---------- Résultats ---------- */
 function cell(l,v,cls,extra){return "<div class=\"cell"+(extra?" "+extra:"")+"\"><div class=\"l\">"+l+"</div><div class=\"v"+(cls?" "+cls:"")+"\">"+v+"</div></div>"}
 function renderSummary(C){
   $("exNote").hidden=!S.example;
-  if(S.pts.length<2){$("sum").innerHTML="<p class=\"note\" style=\"grid-column:1/-1\">Ajoute au moins deux points pour calculer le vol.</p>";return}
+  if(S.pts.length<2){$("sum").innerHTML="<p class=\"note\" style=\"grid-column:1/-1\">Ajoute au moins deux points à l’étape Route pour calculer le vol.</p>";return}
   var ok=C.margin>=0,h="";
   h+=cell("Distance","<span class=\"mono\">"+C.tD.toFixed(0)+" NM</span>");
   h+=cell("Temps de vol",hm(C.tT));
@@ -1015,19 +1137,12 @@ function renderLegs(C){
      +cell("Temps",hm(L.ete))
      +cell("Carburant",L.fuel.toFixed(1)+" gal")
      +cell("Arrivée au point",L.eta==null?"--":clock(L.eta))
-     +"</div><div class=\"wind\"><div><label>Vent ce tronçon (° vrais)</label><input type=\"number\" inputmode=\"decimal\" data-i=\""+i+"\" data-k=\"wd\" placeholder=\""+S.wd+"\" value=\""+(L.a.wd===undefined?"":L.a.wd)+"\"></div>"
-     +"<div><label>Vitesse (kt)</label><input type=\"number\" inputmode=\"decimal\" data-i=\""+i+"\" data-k=\"ws\" placeholder=\""+S.ws+"\" value=\""+(L.a.ws===undefined?"":L.a.ws)+"\"></div></div></div>";
+     +"</div></div>";
   });
   $("legs").innerHTML=h;
 }
-$("legs").addEventListener("change",function(e){
-  var t=e.target,k=t.getAttribute("data-k");if(k!=="wd"&&k!=="ws")return;
-  var p=S.pts[+t.getAttribute("data-i")];if(!p)return;
-  if(t.value===""||isNaN(+t.value))delete p[k];else p[k]=+t.value;
-  refresh();
-});
 
-/* ---------- Copier ---------- */
+/* ---------- Copier et imprimer ---------- */
 function planText(){
   var C=compute(),L=["Plan de vol - "+AIRCRAFT[S.ac].n+" ("+S.cruise+" kt, "+S.burn+" gal/h)"];
   if(S.dep)L.push("Départ : "+S.dep);
@@ -1049,6 +1164,28 @@ $("copy").onclick=function(){
     }else manual();
   }catch(e){manual()}
 };
+function buildPrint(C){
+  var h="<h1>Plan de vol</h1><p>"+esc(AIRCRAFT[S.ac].n)+" · vitesse vraie "+S.cruise+" kt · "+S.burn+" gal US/h · préparé le "+new Date().toLocaleDateString("fr-CA")+"</p>";
+  if(S.pts.length<2){$("printSheet").innerHTML=h+"<p>Aucune route.</p>";return}
+  h+="<p><b>Route :</b> "+S.pts.map(function(p){return esc(p.n)}).join(" → ")+"</p>";
+  h+="<p><b>Vent général :</b> "+deg(S.wd)+" / "+S.ws+" kt · <b>Déclinaison :</b> "+S.decl+"° O"+(S.dep?" · <b>Départ :</b> "+esc(S.dep):"")+"</p>";
+  h+="<table><tr><th>#</th><th>De → à</th><th>Route vraie</th><th>Cap mag.</th><th>Dist. (NM)</th><th>Vent</th><th>GS (kt)</th><th>Temps</th><th>Carb. (gal)</th><th>Arrivée</th></tr>";
+  C.legs.forEach(function(l,i){
+    h+="<tr><td>"+(i+1)+"</td><td>"+esc(l.a.n)+" → "+esc(l.b.n)+"</td><td>"+deg(l.tc)+"</td><td>"+deg(l.mh)+"</td><td>"+l.d.toFixed(1)+"</td><td>"+deg(l.wd)+" / "+Math.round(l.ws)+"</td><td>"+Math.round(l.w.gs)+"</td><td>"+hm(l.ete)+"</td><td>"+l.fuel.toFixed(1)+"</td><td>"+(l.eta==null?"--":clock(l.eta))+"</td></tr>";
+  });
+  h+="<tr class=\"tot\"><td></td><td>Total</td><td></td><td></td><td>"+C.tD.toFixed(0)+"</td><td></td><td></td><td>"+hm(C.tT)+"</td><td>"+C.trip.toFixed(1)+"</td><td>"+(C.eta==null?"--":clock(C.eta))+"</td></tr></table>";
+  h+="<table><tr><th>Carburant du trajet</th><th>Roulage et montée</th><th>Réserve ("+S.res+" min)</th><th>Requis</th><th>À bord</th><th>Marge</th></tr><tr><td>"+C.trip.toFixed(1)+" gal</td><td>"+S.taxi.toFixed(1)+" gal</td><td>"+C.res.toFixed(1)+" gal</td><td>"+C.req.toFixed(1)+" gal</td><td>"+S.fuel.toFixed(1)+" gal</td><td>"+(C.margin>=0?"+":"")+C.margin.toFixed(1)+" gal</td></tr></table>";
+  h+="<p>Météo, NOTAM, altimètre :</p><div class=\"ln\"></div><div class=\"ln\"></div><div class=\"ln\"></div>";
+  h+="<p style=\"margin-top:10pt;font-size:9pt\">Document de préparation non officiel. Distances en ligne droite, sans espace aérien ni relief. À valider avec les cartes officielles à jour et le manuel de vol de l’avion.</p>";
+  $("printSheet").innerHTML=h;
+}
+$("print").onclick=function(){
+  var m=$("copyMsg");
+  if(S.pts.length<2){m.textContent="Ajoute au moins deux points avant d’imprimer.";m.hidden=false;return}
+  buildPrint(compute());
+  m.textContent="Si rien ne s’ouvre, ouvre la version hébergée en https : l’impression est bloquée dans l’aperçu.";m.hidden=false;
+  try{window.print()}catch(e){}
+};
 
 /* ---------- Carte ---------- */
 var map=L.map("map",{zoomControl:true}).setView([46.9,-71.8],7);
@@ -1060,24 +1197,29 @@ var gridG=L.layerGroup().addTo(map),aptG=L.layerGroup().addTo(map),routeG=L.laye
 
 function drawGrid(){
   gridG.clearLayers();
-  var z=map.getZoom(),step=z<6?2:(z<9?1:(z<11?0.5:0.25)),b=map.getBounds(),n=0,v;
-  for(v=Math.ceil(b.getSouth()/step)*step;v<=b.getNorth()&&n<40;v+=step,n++){
+  var z=map.getZoom(),step_=z<6?2:(z<9?1:(z<11?0.5:0.25)),b=map.getBounds(),n=0,v;
+  for(v=Math.ceil(b.getSouth()/step_)*step_;v<=b.getNorth()&&n<40;v+=step_,n++){
     L.polyline([[v,b.getWest()-1],[v,b.getEast()+1]],{color:"#7a8c99",weight:1,opacity:.35,interactive:false}).addTo(gridG);
-    L.marker([v,b.getWest()],{interactive:false,icon:L.divIcon({className:"",html:"<span class=\"gl\">"+v.toFixed(step<1?2:0)+"°N</span>",iconSize:[40,14],iconAnchor:[-4,7]})}).addTo(gridG);
+    L.marker([v,b.getWest()],{interactive:false,icon:L.divIcon({className:"",html:"<span class=\"gl\">"+v.toFixed(step_<1?2:0)+"°N</span>",iconSize:[40,14],iconAnchor:[-4,7]})}).addTo(gridG);
   }
   n=0;
-  for(v=Math.ceil(b.getWest()/step)*step;v<=b.getEast()&&n<40;v+=step,n++){
+  for(v=Math.ceil(b.getWest()/step_)*step_;v<=b.getEast()&&n<40;v+=step_,n++){
     L.polyline([[b.getSouth()-1,v],[b.getNorth()+1,v]],{color:"#7a8c99",weight:1,opacity:.35,interactive:false}).addTo(gridG);
-    L.marker([b.getNorth(),v],{interactive:false,icon:L.divIcon({className:"",html:"<span class=\"gl\">"+Math.abs(v).toFixed(step<1?2:0)+"°"+(v<0?"O":"E")+"</span>",iconSize:[40,14],iconAnchor:[20,-2]})}).addTo(gridG);
+    L.marker([b.getNorth(),v],{interactive:false,icon:L.divIcon({className:"",html:"<span class=\"gl\">"+Math.abs(v).toFixed(step_<1?2:0)+"°"+(v<0?"O":"E")+"</span>",iconSize:[40,14],iconAnchor:[20,-2]})}).addTo(gridG);
   }
 }
 function drawApts(){
   aptG.clearLayers();
-  var lab=map.getZoom()>=7;
+  var z=map.getZoom(),b=map.getBounds().pad(0.15),n=0,lab=z>=8;
   Object.keys(APT).forEach(function(k){
-    var m=L.circleMarker([APT[k][0],APT[k][1]],{radius:6,color:"#fff",weight:2,fillColor:"#006f8a",fillOpacity:1,bubblingMouseEvents:false});
+    var a=APT[k];
+    if(z<7&&!a[4])return;
+    if(!b.contains([a[0],a[1]]))return;
+    if(n>=140)return;
+    n++;
+    var m=L.circleMarker([a[0],a[1]],{radius:a[4]?7:5,color:"#fff",weight:2,fillColor:"#006f8a",fillOpacity:1,bubblingMouseEvents:false});
     m.bindTooltip(k,{permanent:lab,direction:"right",offset:[6,0],className:"aptl"});
-    m.on("click",function(){addPoint({n:k,la:APT[k][0],lo:APT[k][1]});structure()});
+    m.on("click",function(){addAirport(k)});
     m.addTo(aptG);
   });
 }
@@ -1107,8 +1249,7 @@ map.on("click",function(e){
   if(!addMode)return;
   addPoint({n:"",la:e.latlng.lat,lo:e.latlng.lng});structure();
 });
-map.on("zoomend",drawApts);
-map.on("moveend zoomend",drawGrid);
+map.on("moveend",function(){drawApts();drawGrid()});
 $("addMode").onclick=function(){
   addMode=!addMode;var b=$("addMode");
   b.classList.toggle("on",addMode);b.setAttribute("aria-pressed",addMode?"true":"false");
@@ -1116,6 +1257,7 @@ $("addMode").onclick=function(){
   $("map").classList.toggle("adding",addMode);
 };
 function fitRoute(){
+  map.invalidateSize();
   if(S.pts.length>=2)map.fitBounds(L.latLngBounds(S.pts.map(function(p){return [p.la,p.lo]})),{padding:[40,40],maxZoom:11});
   else if(S.pts.length===1)map.setView([S.pts[0].la,S.pts[0].lo],9);
 }
@@ -1152,10 +1294,10 @@ try{var sk=localStorage.getItem(OAIP);if(sk){$("oaipKey").value=sk;setOaip()}}ca
 /* ---------- Mise à jour ---------- */
 function refresh(){
   var C=compute();
-  renderSummary(C);renderLegs(C);drawRoute(C);save();
+  renderSummary(C);renderLegs(C);renderLegWinds(C);drawRoute(C);buildPrint(C);save();
 }
 loadSaved();
 syncInputs();renderPoints();refresh();drawApts();drawGrid();
-setTimeout(function(){map.invalidateSize();fitRoute()},150);
+showStep(1);
 </script>
 </body></html>
