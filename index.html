@@ -919,6 +919,16 @@ pre.code{font:11px "B612 Mono",monospace;background:var(--panel);border:1px soli
       <p class="note">Les distances sont lues par calcul sur les graphiques du manuel, avec une incertitude d’environ 5 %. En cas de doute, compare avec le graphique du manuel de vol.</p>
       <div id="pfOut" style="margin-top:8px"></div>
     </section>
+<section class="card" style="margin-top:16px" id="clBox">
+      <h2>Montée</h2>
+      <p class="note" style="margin-top:0">Vitesses ascensionnelles lues sur les graphiques du manuel de vol du DA20-C1, à la masse maximale (1 764 lb). Le manuel ne corrige pas pour une masse plus faible : la montée réelle sera meilleure. Le départ utilise les conditions du départ, la remise des gaz celles de l’arrivée (carte précédente).</p>
+      <div class="fields">
+        <div><label for="cl_alt">Altitude de croisière (ft)</label><input id="cl_alt" type="number" inputmode="decimal" step="any"></div>
+        <div><label for="cl_req">Gradient requis (ft/NM, facultatif)</label><input id="cl_req" type="number" inputmode="decimal" step="any"></div>
+      </div>
+      <label class="chk" style="margin-top:8px"><input type="checkbox" id="cl_nof"> Sans carénages de roues (−3 % selon le manuel)</label>
+      <div id="clOut" style="margin-top:8px"></div>
+    </section>
   </div>
 
   <div class="step" data-step="5" hidden>
@@ -928,7 +938,8 @@ pre.code{font:11px "B612 Mono",monospace;background:var(--panel);border:1px soli
       <div id="sum" class="sum"></div>
       <div class="tools" style="margin-top:10px;margin-bottom:0">
         <button class="btn" id="copy" type="button">Copier le plan</button>
-        <button class="btn" id="print" type="button">Imprimer ou enregistrer en PDF</button>
+        <button class="btn on" id="pdf" type="button">Exporter en PDF</button>
+        <button class="btn" id="print" type="button">Imprimer</button>
       </div>
       <p class="note" id="copyMsg" hidden></p>
       <textarea id="out" readonly hidden aria-label="Texte du plan"></textarea>
@@ -1325,6 +1336,7 @@ function buildPrint(C){
   h+="<p style=\"margin-top:10pt;font-size:9pt\">Document de préparation non officiel. Distances en ligne droite, sans espace aérien ni relief. À valider avec les cartes officielles à jour et le manuel de vol de l’avion.</p>";
   $("printSheet").innerHTML=h;
 }
+$("pdf").onclick=function(){exportPdf()};
 $("print").onclick=function(){
   var m=$("copyMsg");
   if(S.pts.length<2){m.textContent="Ajoute au moins deux points avant d’imprimer.";m.hidden=false;return}
@@ -1517,7 +1529,7 @@ async function loadWx(){
   if(!st.length){stn.textContent="Ajoute un aéroport à la route ou une station ci-dessus.";return}
   stn.textContent="Chargement de "+st.join(", ")+"…";box.innerHTML="";
   var out=await Promise.all(st.map(wxOne));
-  WX={};out.forEach(function(r){WX[r.code]=r});
+  WX={};out.forEach(function(r){WX[r.code]=r});WXTIME=new Date();
   var fails=out.filter(function(r){return r.fail}).length;
   stn.textContent=(fails===out.length?"Aucune réponse. Dans l’aperçu de claude.ai, les requêtes externes sont bloquées : ouvre la version hébergée. Sinon, vérifie ta connexion ou ouvre « Si la météo ne s’affiche pas ».":"Stations : "+st.join(", ")+". Mis à jour à "+new Date().toLocaleTimeString("fr-CA",{hour:"2-digit",minute:"2-digit"})+".");
   renderWx(out);
@@ -1576,7 +1588,8 @@ var WB={crew:5.63,bag:32.44,ext:62.0,fuel:32.44,dens:6.01,mtow:1764,ramp:1770,ba
  w1:1653,w2:1764,f1:7.95,f2:8.07,a1:12.48,a2:12.16,exEW:1153,exEM:12562};
 /* POH tableau 4 : altitude ft, distance 50 ft (ft), roulement (ft) */
 var LAND=[[0,1360,661],[1000,1387,680],[2000,1417,701],[3000,1447,722],[4000,1478,744],[5000,1511,767],[6000,1545,791],[7000,1580,815]];
-var LAST={wb:null,pf:null};
+var CLIMB={"cruise":{"c":[[0,[[-20.11,-1578.0],[-10.67,-1179.0],[-3.17,-842.0],[3.44,-535.0],[10.22,-221.0],[18.21,134.0],[28.46,565.0],[42.02,1105.0],[59.94,1790.0]]],[2000,[[-19.94,582.0],[-11.33,949.0],[-4.28,1270.0],[2.18,1575.0],[9.03,1893.0],[17.24,2255.0],[27.79,2690.0],[41.65,3229.0],[59.79,3900.0]]],[4000,[[-20.03,2773.0],[-10.62,3175.0],[-3.16,3520.0],[3.4,3836.0],[10.14,4154.0],[18.1,4504.0],[28.35,4914.0],[41.94,5416.0],[59.94,6038.0]]],[6000,[[-20.19,4978.0],[-19.01,5038.0],[-15.41,5210.0],[-9.35,5486.0],[-0.79,5857.0],[10.35,6315.0],[24.1,6850.0],[40.51,7454.0],[59.65,8118.0]]],[8000,[[-19.94,7169.0],[-18.76,7227.0],[-15.17,7397.0],[-9.14,7669.0],[-0.59,8036.0],[10.53,8489.0],[24.26,9021.0],[40.66,9622.0],[59.79,10285.0]]],[10000,[[-19.86,9314.0],[-18.82,9373.0],[-15.6,9543.0],[-10.01,9816.0],[-1.87,10183.0],[9.0,10636.0],[22.78,11166.0],[39.65,11765.0],[59.79,12423.0]]],[12000,[[-19.94,11474.0],[-18.69,11542.0],[-14.94,11735.0],[-8.69,12034.0],[0.04,12422.0],[11.26,12881.0],[24.97,13393.0],[41.14,13939.0],[59.79,14503.0]]],[14000,[[-19.86,13649.0],[-18.99,13701.0],[-16.18,13853.0],[-11.09,14102.0],[-3.4,14443.0],[7.22,14872.0],[21.1,15384.0],[38.56,15975.0],[59.94,16642.0]]],[16000,[[-20.03,15825.0],[-18.59,15891.0],[-14.62,16070.0],[-8.62,16335.0],[-1.07,16658.0],[7.52,17011.0],[16.65,17365.0],[25.84,17693.0],[34.58,17967.0]]]],"l":[[17332.0,1.0],[-2025.0,1033.8]]},"to":{"c":[[0,[[-20.11,-1578.0],[-10.67,-1179.0],[-3.17,-843.0],[3.44,-535.0],[10.22,-221.0],[18.21,134.0],[28.46,565.0],[42.02,1105.0],[59.94,1790.0]]],[2000,[[-19.94,582.0],[-11.33,949.0],[-4.28,1270.0],[2.19,1575.0],[9.03,1893.0],[17.24,2255.0],[27.79,2690.0],[41.65,3228.0],[59.79,3899.0]]],[4000,[[-20.03,2773.0],[-10.62,3175.0],[-3.16,3520.0],[3.4,3836.0],[10.14,4154.0],[18.1,4504.0],[28.35,4914.0],[41.94,5416.0],[59.94,6038.0]]],[6000,[[-20.19,4978.0],[-19.01,5038.0],[-15.41,5210.0],[-9.35,5486.0],[-0.79,5857.0],[10.35,6315.0],[24.1,6850.0],[40.51,7454.0],[59.65,8118.0]]],[8000,[[-19.94,7169.0],[-18.76,7227.0],[-15.17,7397.0],[-9.14,7669.0],[-0.59,8036.0],[10.53,8489.0],[24.26,9021.0],[40.66,9622.0],[59.79,10285.0]]],[10000,[[-19.86,9314.0],[-18.82,9373.0],[-15.6,9543.0],[-10.01,9816.0],[-1.87,10183.0],[9.0,10636.0],[22.78,11166.0],[39.65,11765.0],[59.79,12423.0]]],[12000,[[-19.94,11474.0],[-18.69,11542.0],[-14.94,11735.0],[-8.69,12034.0],[0.04,12422.0],[11.26,12881.0],[24.97,13393.0],[41.14,13940.0],[59.79,14503.0]]],[14000,[[-19.86,13649.0],[-18.99,13701.0],[-16.18,13853.0],[-11.09,14102.0],[-3.4,14443.0],[7.22,14871.0],[21.1,15384.0],[38.56,15975.0],[59.94,16641.0]]],[16000,[[-20.03,15825.0],[-18.59,15891.0],[-14.62,16070.0],[-8.62,16335.0],[-1.07,16658.0],[7.52,17010.0],[16.65,17365.0],[25.84,17693.0],[34.58,17967.0]]]],"l":[[17996.0,33.1],[-1993.0,942.9]]},"ldg":{"c":[[0,[[-20.11,-1578.0],[-10.67,-1179.0],[-3.17,-843.0],[3.44,-535.0],[10.22,-221.0],[18.21,134.0],[28.46,565.0],[42.02,1105.0],[59.94,1790.0]]],[2000,[[-19.94,582.0],[-11.33,949.0],[-4.28,1270.0],[2.18,1575.0],[9.03,1893.0],[17.24,2255.0],[27.79,2690.0],[41.65,3228.0],[59.79,3900.0]]],[4000,[[-20.02,2773.0],[-10.62,3175.0],[-3.16,3520.0],[3.4,3836.0],[10.14,4154.0],[18.1,4504.0],[28.35,4914.0],[41.94,5416.0],[59.94,6038.0]]],[6000,[[-20.19,4979.0],[-19.01,5038.0],[-15.41,5210.0],[-9.35,5486.0],[-0.79,5857.0],[10.35,6315.0],[24.1,6850.0],[40.51,7454.0],[59.65,8118.0]]],[8000,[[-19.94,7169.0],[-18.76,7227.0],[-15.18,7397.0],[-9.14,7669.0],[-0.59,8036.0],[10.53,8489.0],[24.26,9021.0],[40.66,9622.0],[59.79,10285.0]]],[10000,[[-19.86,9314.0],[-18.82,9373.0],[-15.6,9543.0],[-10.01,9816.0],[-1.87,10183.0],[9.0,10636.0],[22.78,11166.0],[39.65,11765.0],[59.79,12423.0]]],[12000,[[-19.94,11474.0],[-18.69,11542.0],[-14.94,11735.0],[-8.69,12034.0],[0.04,12422.0],[11.26,12881.0],[24.97,13393.0],[41.14,13940.0],[59.79,14504.0]]],[14000,[[-19.86,13649.0],[-18.99,13701.0],[-16.18,13853.0],[-11.09,14102.0],[-3.4,14443.0],[7.22,14871.0],[21.1,15384.0],[38.56,15975.0],[59.94,16641.0]]],[16000,[[-20.02,15825.0],[-18.59,15891.0],[-14.62,16070.0],[-8.62,16335.0],[-1.07,16658.0],[7.52,17011.0],[16.65,17365.0],[25.84,17693.0],[34.58,17967.0]]]],"l":[[16632.0,2.8],[-2014.0,492.0]]}};
+var LAST={wb:null,pf:null,cl:null};
 function iv(xs,ys,x){
   var a=[],b=[],i;
   for(i=0;i<xs.length;i++)if(ys[i]!==null&&ys[i]!==undefined){a.push(xs[i]);b.push(ys[i])}
@@ -1702,6 +1715,9 @@ function buildPfUi(){
     });
   });
   $("pfIn").addEventListener("click",function(e){var b=e.target.closest("button[data-pfm]");if(b)pfMetar(b.getAttribute("data-pfm"))});
+  $("cl_alt").addEventListener("input",function(){S.cl.alt=$("cl_alt").value;refresh()});
+  $("cl_req").addEventListener("input",function(){S.cl.req=$("cl_req").value;refresh()});
+  $("cl_nof").addEventListener("change",function(){S.cl.nof=$("cl_nof").checked;refresh()});
   $("pf_hw50").addEventListener("change",function(){S.pf.hw50=$("pf_hw50").checked;refresh()});
   $("pf_margin").addEventListener("input",function(){var v=parseFloat($("pf_margin").value);S.pf.margin=isNaN(v)||v<0?0:v;refresh()});
   ["ew","em","pil","pax","bag","ext"].forEach(function(k){
@@ -1716,6 +1732,10 @@ function syncPf(){
   ["dep","arr"].forEach(function(w){PF_FIELDS.forEach(function(f){var v=S.pf[w][f[0]];$("pf_"+w+"_"+f[0]).value=(v===undefined||v===null)?"":v})});
   $("pf_margin").value=S.pf.margin===undefined?25:S.pf.margin;
   $("pf_hw50").checked=S.pf.hw50!==false;
+  if(!S.cl)S.cl={};
+  $("cl_alt").value=S.cl.alt===undefined?"":S.cl.alt;
+  $("cl_req").value=S.cl.req===undefined?"":S.cl.req;
+  $("cl_nof").checked=!!S.cl.nof;
 }
 async function pfMetar(which){
   var code=pfCode(which),m=$("pf_"+which+"_m");
@@ -1812,6 +1832,93 @@ function pfRender(C){
   $("pfOut").innerHTML=h;
   LAST.pf={out:out,marg:marg,wTO:wTO,assumed:assumed};
 }
+
+/* Montée : figures 5.5, 5.6 et 5.8 du manuel (altitude équivalente, puis vitesse ascensionnelle) */
+function clEq(d,pa,T){
+  var hs=d.c.map(function(c){
+    var xs=c[1].map(function(q){return q[0]}),ys=c[1].map(function(q){return q[1]});
+    return iv(xs,ys,T);
+  });
+  return iv(d.c.map(function(c){return c[0]}),hs,pa);
+}
+function clRoc(k,pa,T,nof){
+  var d=CLIMB[k],fl=[],P=pa,Tc=T;
+  if(P>16000)return {out:true,why:"Altitude-pression au-dessus de 16 000 ft : hors du graphique."};
+  if(P<0){P=0;fl.push("Altitude-pression négative : calculée à 0 ft.")}
+  if(Tc>60)return {out:true,why:"Température au-dessus de 60 °C : hors du graphique."};
+  if(Tc<-20){Tc=-20;fl.push("Température sous −20 °C : calculée à −20 °C.")}
+  var h=clEq(d,P,Tc),l=d.l,r=l[1][1]+(h-l[1][0])*(l[0][1]-l[1][1])/(l[0][0]-l[1][0]);
+  if(r<0)r=0;
+  if(nof)r*=0.97;
+  return {out:false,roc:r,eq:h,fl:fl};
+}
+function tasFromIas(ias,pa,T){
+  var sig=Math.pow(1-6.8756e-6*pa,5.2559)/((T+273.15)/288.15);
+  return ias/Math.sqrt(sig);
+}
+function climbTo(pa0,T0,paT,nof){
+  var h=pa0,tm=0,dist=0,hm,Tm,r,h2,dt;
+  if(paT<=pa0+1)return {zero:true};
+  while(h<paT-1e-6){
+    h2=Math.min(paT,h+500);hm=(h+h2)/2;Tm=T0-1.98*(hm-pa0)/1000;
+    r=clRoc("cruise",hm,Tm,nof);
+    if(r.out||r.roc<50)return {ceil:true,h:h,t:tm,d:dist};
+    dt=(h2-h)/r.roc;tm+=dt;dist+=tasFromIas(75,hm,Tm)/60*dt;h=h2;
+  }
+  return {t:tm,d:dist};
+}
+function clRender(C){
+  var isDA=AIRCRAFT[S.ac].n===DA20;
+  $("clBox").hidden=!isDA;
+  LAST.cl=null;
+  if(!isDA)return;
+  var cl=S.cl||{},nof=!!cl.nof;
+  var D=pfInputs("dep"),A=pfInputs("arr");
+  var def=null;
+  if(S.crk&&S.crk!=="custom"){var q=parseInt(String(S.crk).split("-")[0],10);if(q>0)def=q}
+  $("cl_alt").placeholder=def===null?"":String(def);
+  var alt=gv(cl,"alt",null);if(alt===null)alt=def;
+  var req=gv(cl,"req",null);
+  var rows=[
+   ["Montée normale, volets croisière","cruise",75,D],
+   ["Montée volets décollage","to",68,D],
+   ["Remise des gaz, volets atterrissage","ldg",52,A]
+  ];
+  var h="<div class=\"leg\"><h3>Vitesse ascensionnelle</h3><div class=\"lg\">",notes=[],res={rows:[],climb:null},best=0;
+  rows.forEach(function(r){
+    var R=clRoc(r[1],r[3].pa,r[3].oat,nof),lbl=r[0]+" ("+r[2]+" KIAS)";
+    if(R.out){h+=cell(lbl,"Hors graphique","bad");notes.push(r[0]+" : "+R.why);res.rows.push({n:r[0],ias:r[2],out:true});return}
+    var tas=tasFromIas(r[2],r[3].pa,r[3].oat),g=R.roc*60/tas;
+    h+=cell(lbl,Math.round(R.roc)+" ft/min<br><span style=\"font-size:13px\">"+Math.round(g)+" ft/NM</span>");
+    R.fl.forEach(function(x){if(notes.indexOf(x)<0)notes.push(x)});
+    res.rows.push({n:r[0],ias:r[2],roc:R.roc,g:g,k:r[1]});
+    if(r[1]!=="ldg"&&g>best)best=g;
+  });
+  h+="</div></div>";
+  if(req!==null&&best>0){
+    var okG=best>=req;
+    h+="<p class=\"note "+(okG?"ok":"bad")+"\" style=\"font-weight:700\">"+(okG?"Le gradient requis de "+Math.round(req)+" ft/NM est atteint ("+Math.round(best)+" ft/NM disponibles à la vitesse de meilleure montée, sans vent).":"Le gradient requis de "+Math.round(req)+" ft/NM n’est pas atteint ("+Math.round(best)+" ft/NM disponibles à la vitesse de meilleure montée, sans vent).")+"</p>";
+  }
+  if(alt!==null&&alt>0){
+    var paT=alt+(29.92-D.qnh)*1000,CT=climbTo(D.pa,D.oat,paT,nof);
+    res.climb={alt:alt,r:CT};
+    h+="<div class=\"leg\"><h3>Montée jusqu’à "+sp(Math.round(alt))+" ft</h3>";
+    if(CT.zero)h+="<p class=\"note\" style=\"margin-top:0\">L’altitude de croisière est celle du départ.</p>";
+    else if(CT.ceil)h+="<p class=\"note bad\" style=\"margin-top:0\">L’avion n’atteint pas cette altitude : la vitesse ascensionnelle tombe sous 50 ft/min vers "+sp(Math.round(CT.h))+" ft (conditions du départ, température décroissante avec l’altitude).</p>";
+    else{
+      h+="<div class=\"lg\">"+cell("Temps",Math.round(CT.t)+" min")+cell("Distance",CT.d.toFixed(1).replace(".",",")+" NM")+"</div>";
+      if(S.pts.length>1&&C&&CT.d>C.tD)notes.push("La montée est plus longue que la route entière ("+C.tD.toFixed(0)+" NM).");
+      notes.push("Montée à 75 KIAS, volets croisière, puissance maximale, sans vent, avec la température qui baisse de 2 °C par 1 000 ft.");
+    }
+    h+="</div>";
+    if(alt>13120)notes.push("Le manuel indique une altitude de croisière maximale de 13 120 ft (conditions standard).");
+  }
+  notes.push("Le carburant de la montée à pleine puissance n’est pas dans le manuel : compte-le dans le champ « Roulage et montée » de l’étape 1.");
+  notes.push("Les vitesses de meilleur angle de montée sont 60 KIAS (volets croisière) et 57 KIAS (volets décollage), sans graphique dans le manuel.");
+  h+="<p class=\"note"+(notes.some(function(n){return /Hors|n’atteint|plus longue|maximale de/.test(n)})?" bad":"")+"\">"+esc(notes.join(" "))+"</p>";
+  $("clOut").innerHTML=h;
+  LAST.cl=res;
+}
 function perfText(){
   var L=[];
   if(AIRCRAFT[S.ac].n!==DA20)return L;
@@ -1825,7 +1932,217 @@ function perfText(){
     if(d&&d.o.t&&!d.o.t.out)L.push("Décollage"+(d.I.code?" "+d.I.code:"")+" : roulement "+ft(d.o.t.d0)+" ft, 50 ft en "+ft(d.o.t.d50)+" ft ("+ft(d.o.t.d50*P.marg)+" ft avec marge), altitude-pression "+Math.round(d.I.pa)+" ft, "+Math.round(d.I.oat)+" °C");
     if(a&&a.o.l&&!a.o.l.out)L.push("Atterrissage"+(a.I.code?" "+a.I.code:"")+" : roulement "+Math.round(a.o.l.roll)+" ft, 50 ft en "+Math.round(a.o.l.d50)+" ft ("+Math.round(a.o.l.d50*P.marg)+" ft avec marge), altitude-pression "+Math.round(a.I.pa)+" ft");
   }
+  var Q=LAST.cl;
+  if(Q){
+    Q.rows.forEach(function(r){if(!r.out)L.push(r.n+" ("+r.ias+" KIAS) : "+Math.round(r.roc)+" ft/min, "+Math.round(r.g)+" ft/NM")});
+    if(Q.climb&&Q.climb.r&&!Q.climb.r.zero&&!Q.climb.r.ceil)L.push("Montée à "+Math.round(Q.climb.alt)+" ft : "+Math.round(Q.climb.r.t)+" min, "+Q.climb.r.d.toFixed(1)+" NM (sans vent)");
+  }
   return L;
+}
+
+var WXTIME=null;
+/* ---------- Export PDF (généré dans la page, sans bibliothèque) ---------- */
+var PW=[278,278,355,556,556,889,667,191,333,333,389,584,278,333,278,278,556,556,556,556,556,556,556,556,556,556,278,278,584,584,584,556,1015,667,667,722,722,667,611,778,722,278,500,667,556,833,722,778,667,778,722,667,611,722,667,944,667,667,611,278,278,278,469,556,333,556,556,500,556,556,278,556,556,222,222,500,222,833,556,556,556,556,333,500,278,556,500,722,500,500,500,334,260,334,584];
+var PB=[278,333,474,556,556,889,722,238,333,333,389,584,278,333,278,278,556,556,556,556,556,556,556,556,556,556,333,333,584,584,584,611,975,722,722,722,722,667,611,778,722,278,556,722,611,833,722,778,667,778,722,667,611,722,667,944,667,667,611,333,278,333,584,556,333,556,611,556,611,556,333,611,611,278,278,556,278,889,611,611,611,611,389,556,333,611,556,778,556,556,500,389,280,389,584];
+var WINMAP={"’":146,"‘":145,"“":147,"”":148,"–":150,"—":151,"…":133,"œ":156,"€":128};
+function wa(s){
+  s=String(s).replace(/−/g,"-").replace(/→/g,">").replace(/≥/g,">=").replace(/≤/g,"<=").replace(/[  ]/g," ");
+  var o="",i,c,ch;
+  for(i=0;i<s.length;i++){ch=s.charAt(i);c=ch.charCodeAt(0);if(WINMAP[ch])c=WINMAP[ch];else if(c>255)c=63;o+=String.fromCharCode(c)}
+  return o;
+}
+function pdfEsc(s){return wa(s).replace(/\\/g,"\\\\").replace(/\(/g,"\\(").replace(/\)/g,"\\)")}
+function tw(s,size,bold,mono){
+  s=wa(s);var w=0,i,c,t;
+  for(i=0;i<s.length;i++){
+    if(mono){w+=600;continue}
+    c=s.charCodeAt(i);
+    if(c<32||c>126){t=s.charAt(i).normalize("NFD").charCodeAt(0);c=(t>=32&&t<=126)?t:0}
+    w+=(c>=32&&c<=126)?(bold?PB:PW)[c-32]:556;
+  }
+  return w*size/1000;
+}
+function PdfDoc(){
+  var W=612,H=792,M=40,pages=[],cur=null,y=0,self=this,COL={bad:"0.70 0.10 0.10",ok:"0.10 0.45 0.20",mute:"0.40 0.40 0.40",k:"0 0 0"};
+  this.W=W;this.M=M;this.CW=W-2*M;
+  function np(){cur=[];pages.push(cur);y=H-M}
+  np();
+  this.np=np;
+  this.y=function(v){if(v!==undefined)y=v;return y};
+  this.ensure=function(h){if(y-h<M+16)np()};
+  this.gap=function(h){y-=h};
+  this.text=function(x,yy,s,size,bold,mono,col){
+    cur.push("BT "+(COL[col]||COL.k)+" rg /"+(mono?"F3":(bold?"F2":"F1"))+" "+size+" Tf "+x.toFixed(1)+" "+yy.toFixed(1)+" Td ("+pdfEsc(s)+") Tj ET");
+  };
+  this.line=function(x1,y1,x2,y2,wd,g){cur.push((g===undefined?"0.6":g)+" G "+(wd||0.5)+" w "+x1.toFixed(1)+" "+y1.toFixed(1)+" m "+x2.toFixed(1)+" "+y2.toFixed(1)+" l S")};
+  this.rect=function(x,yy,w,h,fill){cur.push((fill?fill+" g ":"")+x.toFixed(1)+" "+yy.toFixed(1)+" "+w.toFixed(1)+" "+h.toFixed(1)+" re "+(fill?"f":"S"))};
+  this.wrap=function(s,width,size,bold,mono){
+    var out=[],paras=String(s).split("\n"),k,words,ln,t,w;
+    for(k=0;k<paras.length;k++){
+      words=paras[k].split(/\s+/).filter(Boolean);ln="";
+      if(!words.length){out.push("");continue}
+      for(w=0;w<words.length;w++){
+        t=ln?ln+" "+words[w]:words[w];
+        if(tw(t,size,bold,mono)<=width)ln=t;
+        else{
+          if(ln)out.push(ln);
+          ln=words[w];
+          while(tw(ln,size,bold,mono)>width&&ln.length>1){
+            var cut=ln.length-1;while(cut>1&&tw(ln.slice(0,cut),size,bold,mono)>width)cut--;
+            out.push(ln.slice(0,cut));ln=ln.slice(cut);
+          }
+        }
+      }
+      out.push(ln);
+    }
+    return out;
+  };
+  this.para=function(s,o){
+    o=o||{};var size=o.size||10,ld=size*1.35,lines=self.wrap(s,o.width||self.CW,size,o.bold,o.mono),i;
+    for(i=0;i<lines.length;i++){self.ensure(ld);y-=ld;self.text(M+(o.indent||0),y,lines[i],size,o.bold,o.mono,o.col)}
+    y-=(o.after===undefined?3:o.after);
+  };
+  this.h2=function(s){self.ensure(34);y-=8;self.para(s,{size:12.5,bold:true,after:1});self.line(M,y,W-M,y,0.8,"0.2");y-=5};
+  this.table=function(cols,head,rows,o){
+    o=o||{};var size=o.size||8.5,ld=size*1.3,pad=3,total=cols.reduce(function(a,c){return a+c},0),k=self.CW/total,cw=cols.map(function(c){return c*k});
+    function drawRow(cells,bold,fill){
+      var lines=cells.map(function(c,i){var t=(c&&typeof c==="object")?c.t:c;return self.wrap(t===undefined?"":t,cw[i]-2*pad,size,bold||(c&&c.b))});
+      var n=Math.max.apply(null,lines.map(function(l){return l.length})),h=n*ld+2*pad;
+      self.ensure(h+2);
+      var top=y,x=M,i,j;
+      if(fill)self.rect(M,top-h,self.CW,h,fill);
+      for(i=0;i<cells.length;i++){
+        var c=cells[i],col=(c&&typeof c==="object")?c.c:undefined;
+        for(j=0;j<lines[i].length;j++)self.text(x+pad,top-pad-ld*(j+1)+ld*0.28,lines[i][j],size,bold||(c&&c.b),false,col);
+        x+=cw[i];
+      }
+      x=M;for(i=0;i<=cells.length;i++){self.line(x,top,x,top-h,0.4);x+=cw[i]||0}
+      self.line(M,top,W-M,top,0.4);self.line(M,top-h,W-M,top-h,0.4);
+      y=top-h;
+    }
+    drawRow(head,true,"0.90");
+    rows.forEach(function(r,i){drawRow(r,o.boldLast&&i===rows.length-1,null)});
+    y-=6;
+  };
+  this.build=function(footer){
+    var total=pages.length,i,out="%PDF-1.4\n",offs=[],n;
+    function obj(body){offs.push(out.length);out+=(offs.length)+" 0 obj\n"+body+"\nendobj\n"}
+    obj("<< /Type /Catalog /Pages 2 0 R >>");
+    var kids=[];for(i=0;i<total;i++)kids.push((7+i*2)+" 0 R");
+    obj("<< /Type /Pages /Kids ["+kids.join(" ")+"] /Count "+total+" >>");
+    obj("<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>");
+    obj("<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>");
+    obj("<< /Type /Font /Subtype /Type1 /BaseFont /Courier /Encoding /WinAnsiEncoding >>");
+    for(i=0;i<total;i++){
+      cur=pages[i];
+      self.text(M,22,footer+" — page "+(i+1)+" / "+total,7.5,false,false,"mute");
+      var data=pages[i].join("\n");
+      obj("<< /Length "+data.length+" >>\nstream\n"+data+"\nendstream");
+      obj("<< /Type /Page /Parent 2 0 R /MediaBox [0 0 "+W+" "+H+"] /Resources << /Font << /F1 3 0 R /F2 4 0 R /F3 5 0 R >> >> /Contents "+(6+i*2)+" 0 R >>");
+    }
+    var xr=out.length;
+    out+="xref\n0 "+(offs.length+1)+"\n0000000000 65535 f \n";
+    for(i=0;i<offs.length;i++)out+=("0000000000"+offs[i]).slice(-10)+" 00000 n \n";
+    out+="trailer\n<< /Size "+(offs.length+1)+" /Root 1 0 R >>\nstartxref\n"+xr+"\n%%EOF\n";
+    var u8=new Uint8Array(out.length);for(i=0;i<out.length;i++)u8[i]=out.charCodeAt(i)&255;
+    return u8;
+  };
+}
+function buildPdf(){
+  var C=compute(),D=new PdfDoc(),isDA=AIRCRAFT[S.ac].n===DA20,L=LAST;
+  var date=new Date().toLocaleDateString("fr-CA");
+  D.para("Plan de vol",{size:20,bold:true,after:2});
+  D.para(AIRCRAFT[S.ac].n+" · vitesse vraie "+S.cruise+" kt · "+fr(S.burn)+" gal US/h · préparé le "+date,{size:10,col:"mute",after:6});
+  if(S.pts.length<2){D.para("Aucune route : ajoute au moins deux points à l’étape Route.",{size:11});return D.build("Plan Vol")}
+  D.h2("Route et conditions");
+  D.para("Route : "+S.pts.map(function(p){return p.n}).join(" > "),{size:10,bold:true});
+  D.para("Date : "+(S.date||"--")+(S.dep?" · Départ : "+S.dep+" (heure locale)":"")+" · Vent général : "+deg(S.wd)+" / "+S.ws+" kt · Déclinaison : "+S.decl+"° O",{size:9.5});
+  D.para("Réserve : "+C.resMin+" min ("+(C.RI.why==="manual"?"manuelle":(C.RI.night?"vol de nuit":"vol de jour"))+") · Distance totale : "+C.tD.toFixed(0)+" NM · Temps de vol : "+hm(C.tT)+(C.eta==null?"":" · Arrivée : "+clock(C.eta)),{size:9.5});
+  var rows=C.legs.map(function(l,i){return [String(i+1),l.a.n+" > "+l.b.n,deg(l.tc),deg(l.mh),l.d.toFixed(1),deg(l.wd)+" / "+Math.round(l.ws),String(Math.round(l.w.gs)),hm(l.ete),l.fuel.toFixed(1),l.eta==null?"--":clock(l.eta)]});
+  rows.push(["","Total","","",C.tD.toFixed(0),"","",hm(C.tT),C.trip.toFixed(1),C.eta==null?"--":clock(C.eta)]);
+  D.table([20,112,50,46,42,58,38,52,46,48],["#","De > à","Route vraie","Cap mag.","Dist. NM","Vent","GS kt","Temps","Carb. gal","Arrivée"],rows,{boldLast:true});
+  D.h2("Carburant");
+  D.table([1,1,1,1,1,1],["Trajet","Roulage et montée","Réserve ("+C.resMin+" min)","Requis","À bord","Marge"],[[C.trip.toFixed(1)+" gal",S.taxi.toFixed(1)+" gal",C.res.toFixed(1)+" gal",C.req.toFixed(1)+" gal",S.fuel.toFixed(1)+" gal",{t:(C.margin>=0?"+":"")+C.margin.toFixed(1)+" gal",c:C.margin>=0?"ok":"bad",b:true}]]);
+  D.para(C.margin>=0?"Assez de carburant avec la réserve ("+(C.margin/S.burn*60).toFixed(0)+" min de marge).":"Carburant insuffisant : il manque "+(-C.margin).toFixed(1)+" gal pour garder la réserve.",{size:9.5,bold:true,col:C.margin>=0?"ok":"bad"});
+  /* Météo */
+  var codes=Object.keys(WX);
+  D.h2("Météo (METAR et TAF)");
+  if(!codes.length)D.para("Non chargée. Utilise « Récupérer la météo » à l’étape Conditions avant d’exporter.",{size:9.5,col:"mute"});
+  else{
+    if(WXTIME)D.para("Chargée à "+WXTIME.toLocaleTimeString("fr-CA",{hour:"2-digit",minute:"2-digit"})+" (heure locale). Vents du METAR en degrés vrais.",{size:8.5,col:"mute",after:4});
+    codes.forEach(function(k){
+      var r=WX[k],a=APT[k],o=r.metar?parseMetar(r.metar):null;
+      D.ensure(40);
+      D.para(k+(a?" "+a[2]:"")+(o?"  —  "+(o.cat==="NA"?"catégorie inconnue":o.cat):""),{size:10,bold:true,after:1});
+      if(r.fail)D.para("Pas de réponse pour cette station.",{size:9,col:"bad"});
+      else{
+        D.para(r.metar||"Aucun METAR pour cette station.",{size:8,mono:true,after:2});
+        D.para(r.taf?r.taf.replace(/\s(BECMG|TEMPO|FM\d{6}|PROB\d{2}|RMK)\b/g,"\n$1"):"Pas de TAF pour cette station.",{size:8,mono:true,after:5});
+      }
+    });
+  }
+  if(isDA){
+    var W=L.wb;
+    D.h2("Masse et centrage (manuel de vol du DA20-C1)");
+    if(!W||W.missing)D.para("Masse à vide et moment à vide non saisis.",{size:9.5,col:"mute"});
+    else{
+      var b=S.wb||{};
+      D.para("Masse à vide "+gv(b,"ew",0)+" lb · moment à vide "+gv(b,"em",0)+" po·lb · pilote "+gv(b,"pil",0)+" lb · passager "+gv(b,"pax",0)+" lb · bagages "+gv(b,"bag",0)+" + extension "+gv(b,"ext",0)+" lb",{size:9});
+      D.table([1.1,1,1,1,1.2,1.2,1.1],["Condition","Carburant","Masse","Maximum","Moment (po·lb)","CG (po) / limites","Verdict"],W.conds.map(function(c){return [c.n,c.fuel.toFixed(1)+" gal",{t:Math.round(c.w)+" lb",c:c.inW?undefined:"bad"},c.max+" lb",sp(Math.round(c.m)),{t:c.arm.toFixed(2)+" / "+c.fwd.toFixed(2)+" à "+c.aft.toFixed(2),c:c.inC?undefined:"bad"},{t:c.ok?"OK":"HORS LIMITES",c:c.ok?"ok":"bad",b:true}]}));
+      W.msgs.forEach(function(m){D.para(m,{size:9,col:"bad"})});
+      D.para("Carburant maximal au décollage avec cette charge : environ "+W.fuelMax.toFixed(1)+" gal.",{size:9});
+    }
+    var P=L.pf;
+    D.h2("Décollage et atterrissage");
+    if(P){
+      ["dep","arr"].forEach(function(w){
+        var I=P.out[w].I,o=P.out[w].o,t=(w==="dep"?"Départ":"Arrivée")+(I.code?" "+I.code+" "+APT[I.code][2]:"");
+        D.para(t,{size:10,bold:true,after:1});
+        D.para("Altitude-pression "+sp(Math.round(I.pa))+" ft · "+Math.round(I.oat)+" °C · calage "+fr(I.qnh)+" inHg · vent de face "+Math.round(I.hw)+" kt"+(w==="dep"&&I.hwe!==I.hw?" (compté "+Math.round(I.hwe)+" kt)":"")+" · vent traversier "+Math.round(Math.abs(I.xw))+" kt"+(I.len!==null?" · piste "+sp(Math.round(I.len))+" ft":""),{size:9});
+        if(w==="dep"){
+          if(o.t&&!o.t.out){
+            var okR=I.len===null?null:(o.t.d50*P.marg*3.28084<=I.len);
+            D.table([1,1,1,1.4],["Roulement","Pour franchir 50 ft","Avec marge de "+Math.round((P.marg-1)*100)+" %","Verdict piste"],[[sp(ft(o.t.d0))+" ft",sp(ft(o.t.d50))+" ft",sp(ft(o.t.d50*P.marg))+" ft",okR===null?"Piste non saisie":{t:okR?"La piste suffit":"La piste ne suffit pas",c:okR?"ok":"bad",b:true}]]);
+          }else D.para("Décollage : "+(o.t?o.t.why:"--"),{size:9,col:"bad"});
+          D.para("Masse utilisée : "+Math.round(P.wTO)+" lb"+(P.assumed?" (masse maximale, devis non rempli)":" (devis de masse)")+".",{size:8.5,col:"mute"});
+        }else{
+          if(o.l&&!o.l.out){
+            var okL=I.len===null?null:(o.l.d50*P.marg<=I.len);
+            D.table([1,1,1,1.4],["Roulement","Pour passer 50 ft","Avec marge de "+Math.round((P.marg-1)*100)+" %","Verdict piste"],[[sp(Math.round(o.l.roll))+" ft",sp(Math.round(o.l.d50))+" ft",sp(Math.round(o.l.d50*P.marg))+" ft",okL===null?"Piste non saisie":{t:okL?"La piste suffit":"La piste ne suffit pas",c:okL?"ok":"bad",b:true}]]);
+          }else D.para("Atterrissage : "+(o.l?o.l.why:"--"),{size:9,col:"bad"});
+          D.para("Distance du manuel à la masse maximale, sans correction de vent ni de température.",{size:8.5,col:"mute"});
+        }
+      });
+      D.para("Vitesses du manuel : rotation 44 KIAS, décollage court 52 KIAS puis montée à 58 KIAS pour franchir 50 ft, approche 55 KIAS. Distances lues sur les graphiques du manuel, incertitude d’environ 5 %.",{size:8.5,col:"mute"});
+    }
+    var Q=L.cl;
+    D.h2("Montée");
+    if(Q){
+      D.table([2.2,1,1],["Configuration","Vitesse ascensionnelle","Pente"],Q.rows.map(function(r){return r.out?[r.n+" ("+r.ias+" KIAS)",{t:"Hors graphique",c:"bad"},""]:[r.n+" ("+r.ias+" KIAS)",Math.round(r.roc)+" ft/min",Math.round(r.g)+" ft/NM"]}));
+      if(Q.climb&&Q.climb.r){
+        var R=Q.climb.r;
+        D.para("Montée jusqu’à "+sp(Math.round(Q.climb.alt))+" ft : "+(R.zero?"altitude du départ.":(R.ceil?"altitude non atteignable dans ces conditions.":Math.round(R.t)+" min, "+R.d.toFixed(1).replace(".",",")+" NM (75 KIAS, sans vent).")),{size:9.5,bold:true});
+      }
+      D.para("Valeurs à la masse maximale (1 764 lb), sans vent."+((S.cl&&S.cl.nof)?" Sans carénages de roues (−3 %).":""),{size:8.5,col:"mute"});
+    }
+  }else D.para("Le devis de masse et les performances sont programmés pour le Diamond DA20-C1 seulement.",{size:9,col:"mute"});
+  D.h2("Notes");
+  D.para("Météo, NOTAM, altimètre, ATC :",{size:9.5,after:2});
+  for(var i=0;i<4;i++){D.ensure(20);D.gap(16);D.line(D.M,D.y(),D.W-D.M,D.y(),0.5,"0.5")}
+  D.gap(8);
+  D.para("Document de préparation non officiel. Distances en ligne droite, sans espace aérien ni relief. À valider avec les cartes officielles à jour et le manuel de vol de l’avion.",{size:8,col:"mute"});
+  return D.build("Plan Vol · "+AIRCRAFT[S.ac].n+" · "+date);
+}
+function exportPdf(){
+  var m=$("copyMsg");
+  if(S.pts.length<2){m.textContent="Ajoute au moins deux points avant d’exporter.";m.hidden=false;return}
+  try{
+    var u8=buildPdf(),blob=new Blob([u8],{type:"application/pdf"}),url=URL.createObjectURL(blob),a=document.createElement("a");
+    a.href=url;a.download="plan-vol-"+todayStr().replace(/-/g,"")+".pdf";a.rel="noopener";
+    document.body.appendChild(a);a.click();document.body.removeChild(a);
+    setTimeout(function(){URL.revokeObjectURL(url)},60000);
+    m.innerHTML="PDF généré. S’il ne se télécharge pas (aperçu de claude.ai), ouvre la version hébergée. <a href=\""+url+"\" target=\"_blank\" rel=\"noopener\" style=\"color:var(--cyan)\">Ouvrir le PDF</a>";m.hidden=false;
+  }catch(e){m.textContent="Impossible de générer le PDF dans ce navigateur : utilise « Imprimer ».";m.hidden=false}
 }
 
 /* ---------- OpenAIP ---------- */
@@ -1874,12 +2191,13 @@ function updateResUi(C){
 function refresh(){
   var C=compute();
   updateResUi(C);
-  renderSummary(C);renderLegs(C);renderLegWinds(C);drawRoute(C);pfRender(C);buildPrint(C);save();
+  renderSummary(C);renderLegs(C);renderLegWinds(C);drawRoute(C);pfRender(C);clRender(C);buildPrint(C);save();
 }
 loadSaved();
 if(!S.date||S.date<todayStr())S.date=todayStr();
 if(!S.wb)S.wb={};
 if(!S.pf)S.pf={dep:{},arr:{},margin:25};
+if(!S.cl)S.cl={};
 buildPfUi();
 syncInputs();renderPoints();refresh();drawApts();drawGrid();
 showStep(1);
