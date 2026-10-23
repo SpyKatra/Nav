@@ -872,6 +872,15 @@ pre.code{font:11px "B612 Mono",monospace;background:var(--panel);border:1px soli
     <h2 style="margin-top:14px">Vent par tronçon (facultatif)</h2>
     <div class="list" id="lw"></div>
 
+    <h2 style="margin-top:18px">Vents en altitude (prévision de modèle)</h2>
+    <p class="note" style="margin-top:0">Calculés pour chaque tronçon, à l’altitude ci-dessous et à l’heure du vol, puis utilisés dans les calculs à la place du vent de surface. Un vent que tu saisis toi-même pour un tronçon reste prioritaire.</p>
+    <div class="fields">
+      <div><label for="wa_alt">Altitude de croisière pour les vents (ft)</label><input id="wa_alt" type="number" inputmode="decimal" step="any"></div>
+    </div>
+    <label class="chk" style="margin-top:8px"><input type="checkbox" id="wa_on"> Utiliser ces vents dans les calculs des tronçons</label>
+    <p class="note" id="waSt"></p>
+    <div class="list" id="wa" style="margin-top:8px"></div>
+
     <h2 style="margin-top:18px">Météo des aéroports (METAR et TAF)</h2>
     <p class="note" style="margin-top:0">La météo se charge toute seule dès que la route change. Source : NAV CANADA. Les stations sont les aéroports de ta route, et l’aéroport le plus proche (à 60 NM ou moins) pour les points hors aéroports. Jusqu’à 4 aéroports près de l’arrivée sont aussi vérifiés comme dégagements possibles.</p>
     <label class="chk" style="margin-top:8px"><input type="checkbox" id="autoOn"> Remplir automatiquement les calculs avec la météo (température, calage, vent, piste)</label>
@@ -952,7 +961,8 @@ pre.code{font:11px "B612 Mono",monospace;background:var(--panel);border:1px soli
     </section>
     <section class="card" style="margin-top:16px">
       <h2>Pour compléter la préparation</h2>
-      <p class="note" style="margin-top:0">Plan Vol lit les METAR et les TAF et n’utilise que les vents de surface. Avant le vol, complète avec les produits officiels : cartes GFA, SIGMET, AIRMET, PIREP, radar, satellite et vents en altitude.</p>
+      <p class="note" style="margin-top:0">Plan Vol lit les METAR et les TAF, et les vents en altitude viennent d’un modèle numérique, pas du produit officiel. Avant le vol, complète avec les produits officiels : cartes GFA, SIGMET, AIRMET, PIREP, radar, satellite. Plan Vol ne lit pas les NOTAM : consulte-les dans le service de planification de vol de NAV CANADA.</p>
+      <p class="note" id="notamNote"></p>
       <div class="list">
         <a class="btn" style="display:block;text-align:center;text-decoration:none" href="https://flightplanning.navcanada.ca" target="_blank" rel="noopener">Site météo de NAV CANADA</a>
         <a class="btn" style="display:block;text-align:center;text-decoration:none" href="tel:+18669927433">Briefing du FIC : 1-866-WXBRIEF</a>
@@ -1099,7 +1109,7 @@ function compute(){
   for(i=0;i<S.pts.length-1;i++){
     a=S.pts[i];b=S.pts[i+1];
     d=dist(a.la,a.lo,b.la,b.lo);tc=bearing(a.la,a.lo,b.la,b.lo);
-    wd=num(a.wd,S.wd);ws=num(a.ws,S.ws);
+    wd=num(a.wd,num(a.awd,S.wd));ws=num(a.ws,num(a.aws,S.ws));
     w=windCalc(tc,S.cruise,wd,ws);ete=d/w.gs;cum+=ete;
     legs.push({a:a,b:b,d:d,tc:tc,mc:tc+S.decl,mh:w.th+S.decl,wd:wd,ws:ws,w:w,ete:ete,fuel:ete*S.burn,eta:dep==null?null:dep+cum*60});
     tD+=d;tT+=ete;
@@ -1271,8 +1281,8 @@ function renderLegWinds(C){
   var h="";
   C.legs.forEach(function(L,i){
     h+="<div class=\"lwrow\"><div class=\"t\">"+(i+1)+". "+esc(L.a.n)+" → "+esc(L.b.n)+"</div>"
-     +"<div><label>Vent de (°)</label><input type=\"number\" inputmode=\"decimal\" data-i=\""+i+"\" data-k=\"wd\" placeholder=\""+S.wd+"\" value=\""+(L.a.wd===undefined?"":L.a.wd)+"\"></div>"
-     +"<div><label>Vitesse (kt)</label><input type=\"number\" inputmode=\"decimal\" data-i=\""+i+"\" data-k=\"ws\" placeholder=\""+S.ws+"\" value=\""+(L.a.ws===undefined?"":L.a.ws)+"\"></div></div>";
+     +"<div><label>Vent de (°)</label><input type=\"number\" inputmode=\"decimal\" data-i=\""+i+"\" data-k=\"wd\" placeholder=\""+(L.a.awd!==undefined?Math.round(L.a.awd):S.wd)+"\" value=\""+(L.a.wd===undefined?"":L.a.wd)+"\"></div>"
+     +"<div><label>Vitesse (kt)</label><input type=\"number\" inputmode=\"decimal\" data-i=\""+i+"\" data-k=\"ws\" placeholder=\""+(L.a.aws!==undefined?Math.round(L.a.aws):S.ws)+"\" value=\""+(L.a.ws===undefined?"":L.a.ws)+"\"></div></div>";
   });
   $("lw").innerHTML=h;
 }
@@ -1364,7 +1374,7 @@ function buildPrint(C){
   if(vt0){h+="<p><b>Verdict de préparation : "+esc(vt0.head)+"</b></p>";vt0.items.forEach(function(x){h+="<p>"+(x.l==="bad"?"[PROBLÈME] ":(x.l==="warn"?"[À VÉRIFIER] ":""))+esc(x.t)+"</p>"})}
   var pt=perfText();
   if(pt.length){h+="<p><b>Masse et performances (manuel de vol du DA20-C1) :</b></p>";pt.forEach(function(x){h+="<p>"+esc(x)+"</p>"})}
-  h+="<p style=\"font-size:9pt\">Briefing météo officiel : flightplanning.navcanada.ca · FIC 1-866-WXBRIEF (1-866-992-7433) · 1-866-GOMÉTÉO.</p><p>Météo, NOTAM, altimètre :</p><div class=\"ln\"></div><div class=\"ln\"></div><div class=\"ln\"></div>";
+  h+="<p style=\"font-size:9pt\">NOTAM à consulter : "+esc(wxStations().join(", "))+".</p><p style=\"font-size:9pt\">Briefing météo officiel : flightplanning.navcanada.ca · FIC 1-866-WXBRIEF (1-866-992-7433) · 1-866-GOMÉTÉO.</p><p>Météo, NOTAM, altimètre :</p><div class=\"ln\"></div><div class=\"ln\"></div><div class=\"ln\"></div>";
   h+="<p style=\"margin-top:10pt;font-size:9pt\">Document de préparation non officiel. Distances en ligne droite, sans espace aérien ni relief. À valider avec les cartes officielles à jour et le manuel de vol de l’avion.</p>";
   $("printSheet").innerHTML=h;
 }
@@ -1764,6 +1774,9 @@ function syncPf(){
   $("cl_alt").value=S.cl.alt===undefined?"":S.cl.alt;
   $("cl_req").value=S.cl.req===undefined?"":S.cl.req;
   $("cl_nof").checked=!!S.cl.nof;
+  if(!S.wa)S.wa={};
+  $("wa_alt").value=S.wa.alt===undefined?"":S.wa.alt;$("wa_alt").placeholder=String(cruiseAlt());
+  $("wa_on").checked=S.wa.on!==false;
 }
 async function pfMetar(which){
   var code=pfCode(which),m=$("pf_"+which+"_m");
@@ -2088,6 +2101,7 @@ function buildPdf(){
   D.h2("Route et conditions");
   D.para("Route : "+S.pts.map(function(p){return p.n}).join(" > "),{size:10,bold:true});
   D.para("Date : "+(S.date||"--")+(S.dep?" · Départ : "+S.dep+" (heure locale)":"")+" · Vent général : "+deg(S.wd)+" / "+S.ws+" kt · Déclinaison : "+S.decl+"° O",{size:9.5});
+  if(WAD&&!(S.wa&&S.wa.on===false))D.para("Vents des tronçons : prévision de modèle (Open-Meteo) à "+sp(Math.round(WAD.alt))+" ft, pas le produit officiel.",{size:8.5,col:"mute"});
   D.para("Réserve : "+C.resMin+" min ("+(C.RI.why==="manual"?"manuelle":(C.RI.night?"vol de nuit":"vol de jour"))+") · Distance totale : "+C.tD.toFixed(0)+" NM · Temps de vol : "+hm(C.tT)+(C.eta==null?"":" · Arrivée : "+clock(C.eta)),{size:9.5});
   var rows=C.legs.map(function(l,i){return [String(i+1),l.a.n+" > "+l.b.n,deg(l.tc),deg(l.mh),l.d.toFixed(1),deg(l.wd)+" / "+Math.round(l.ws),String(Math.round(l.w.gs)),hm(l.ete),l.fuel.toFixed(1),l.eta==null?"--":clock(l.eta)]});
   rows.push(["","Total","","",C.tD.toFixed(0),"","",hm(C.tT),C.trip.toFixed(1),C.eta==null?"--":clock(C.eta)]);
@@ -2159,6 +2173,7 @@ function buildPdf(){
   }else D.para("Le devis de masse et les performances sont programmés pour le Diamond DA20-C1 seulement.",{size:9,col:"mute"});
   D.h2("Notes");
   D.para("Briefing météo officiel : flightplanning.navcanada.ca · FIC 1-866-WXBRIEF (1-866-992-7433) · 1-866-GOMÉTÉO.",{size:8.5,col:"mute",after:3});
+  D.para("NOTAM à consulter : "+(wxStations().join(", ")||"--")+" (service de planification de vol de NAV CANADA).",{size:8.5,col:"mute",after:3});
   D.para("Météo, NOTAM, altimètre, ATC :",{size:9.5,after:2});
   for(var i=0;i<4;i++){D.ensure(20);D.gap(16);D.line(D.M,D.y(),D.W-D.M,D.y(),0.5,"0.5")}
   D.gap(8);
@@ -2582,6 +2597,17 @@ function buildVerdict(C){
   /* Jour et nuit */
   if(C.RI.night)add("warn","Vol de nuit ("+(C.RI.why==="depnight"?"départ":"arrivée")+" après la fin du crépuscule civil) : réserve portée à 45 min. Vérifie l’équipement de l’avion et tes qualifications.");
   else if(C.RI.why==="nodep")add("info","Entre la date et l’heure de départ pour vérifier jour ou nuit, l’heure d’arrivée et le TAF à l’heure du vol.");
+  /* Vents en altitude */
+  if(WAD&&!(S.wa&&S.wa.on===false)){
+    var wp=[],mxw=0;
+    C.legs.forEach(function(L,i){var w=WAD.legs[i];if(w){mxw=Math.max(mxw,w.ws);wp.push((i+1)+". "+(w.ws<1?"calme":deg(w.wd)+" / "+Math.round(w.ws)+" kt"))}});
+    if(wp.length)add(mxw>=30?"warn":"info","Vents en altitude à "+sp(Math.round(WAD.alt))+" ft (modèle, degrés vrais) : "+wp.join(" ; ")+(WAD.noDep?" (prévision pour dans 1 h : entre l’heure de départ)":"")+". Ce n’est pas le produit officiel : compare avec les cartes GFA.");
+  }else if(S.pts.length>1)add("info","Vents en altitude non disponibles : les calculs des tronçons utilisent le vent de surface.");
+  /* NOTAM */
+  var nst=wxStations().slice(0,8);if(alts&&alts.length)nst.push(alts[0].k);
+  var ntxt=nst.join(" ");
+  add("info","NOTAM : à consulter avant le vol pour "+(ntxt||"la route")+" dans le service de planification de vol de NAV CANADA. Plan Vol ne lit pas les NOTAM.");
+  $("notamNote").textContent=ntxt?"Aérodromes à saisir pour les NOTAM : "+ntxt+".":"";
   /* Vent */
   if(S.windAuto&&S.windMan!==true&&S.ws>0)add("info","Vent de la route : "+deg(S.wd)+" / "+S.ws+" kt, calculé à partir des vents de surface. Compare avec les vents en altitude (GFA, prévisions de vents) avant le vol.");
   var mx=0;it.forEach(function(x){mx=Math.max(mx,x.l==="bad"?2:(x.l==="warn"?1:0))});
@@ -2604,6 +2630,107 @@ function vdText(){
   return L;
 }
 
+/* ---------- Vents en altitude (prévision de modèle, Open-Meteo) ---------- */
+var WAC={},WAKEY="planvol_wa",waTimer=null,waTok=0,WAD=null,lastRouteSig="",lastTimeSig="",WA_LV=[1000,975,950,925,900,850,800,700,600,500];
+(function(){try{var j=localStorage.getItem(WAKEY);if(j){WAC=JSON.parse(j)||{};var lim=Date.now()-6*3600000;Object.keys(WAC).forEach(function(k){if(!WAC[k]||WAC[k].t<lim)delete WAC[k]})}}catch(e){WAC={}}})();
+function waSave(){try{localStorage.setItem(WAKEY,JSON.stringify(WAC))}catch(e){}}
+function cruiseAlt(){
+  var a=num(S.wa&&S.wa.alt,null);if(a!==null&&a>0)return a;
+  a=num(S.cl&&S.cl.alt,null);if(a!==null&&a>0)return a;
+  if(S.crk&&S.crk!=="custom"){var q=parseInt(String(S.crk).split("-")[0],10);if(q>0)return q}
+  return 4000;
+}
+function waUrl(la,lo){
+  var v=[];
+  WA_LV.forEach(function(l){v.push("wind_speed_"+l+"hPa","wind_direction_"+l+"hPa","geopotential_height_"+l+"hPa")});
+  return "https://api.open-meteo.com/v1/forecast?latitude="+la.join(",")+"&longitude="+lo.join(",")+"&hourly="+v.join(",")+"&wind_speed_unit=kn&timeformat=unixtime&past_hours=3&forecast_hours=96";
+}
+function waIdx(times,tms){
+  var best=-1,bd=1e18;
+  times.forEach(function(t,i){var d=Math.abs(t*1000-tms);if(d<bd){bd=d;best=i}});
+  return bd>2*3600000?-1:best;
+}
+/* Vent (vrai) à une altitude donnée (ft au-dessus du niveau de la mer), interpolé entre les niveaux de pression */
+function waAt(h,i,altFt){
+  var z=altFt*0.3048,pts=[];
+  WA_LV.forEach(function(l){
+    var s=h["wind_speed_"+l+"hPa"],d=h["wind_direction_"+l+"hPa"],g=h["geopotential_height_"+l+"hPa"];
+    if(!s||s[i]==null||!d||d[i]==null)return;
+    var zz=(g&&g[i]!=null)?g[i]:44330.77*(1-Math.pow(l/1013.25,0.190263));
+    pts.push({z:zz,u:-s[i]*Math.sin(rad(d[i])),v:-s[i]*Math.cos(rad(d[i]))});
+  });
+  if(!pts.length)return null;
+  pts.sort(function(a,b){return a.z-b.z});
+  var lo=pts[0],hi=pts[pts.length-1],a=lo,b=lo,k;
+  if(z>=hi.z){a=b=hi}
+  else if(z>lo.z){for(k=0;k<pts.length-1;k++){if(pts[k].z<=z&&z<=pts[k+1].z){a=pts[k];b=pts[k+1];break}}}
+  var f=(a===b||b.z===a.z)?0:(z-a.z)/(b.z-a.z),u=a.u+(b.u-a.u)*f,v=a.v+(b.v-a.v)*f,spd=Math.sqrt(u*u+v*v);
+  return {ws:spd,wd:spd<0.5?0:(Math.atan2(-u,-v)*180/Math.PI+360)%360};
+}
+function scheduleWa(d){clearTimeout(waTimer);waTimer=setTimeout(function(){waLoad(false)},d===undefined?1500:d)}
+async function waLoad(force){
+  var tok=++waTok;
+  if(S.pts.length<2){WAD=null;waApply("");return}
+  var C=compute(),legs=C.legs.slice(0,8),ft=flightTimes(C),base=ft?ft.etd:Date.now()+3600000,alt=cruiseAlt();
+  var lats=[],lons=[],tms=[],cum=0;
+  legs.forEach(function(L){
+    var hh=L.d/Math.max(S.cruise,30);
+    lats.push(+((L.a.la+L.b.la)/2).toFixed(2));lons.push(+((L.a.lo+L.b.lo)/2).toFixed(2));tms.push(base+(cum+hh/2)*3600000);cum+=hh;
+  });
+  var sig=lats.join(",")+"|"+lons.join(",")+"|"+alt+"|"+Math.round(base/3600000),c=WAC[sig];
+  if(!force&&c&&Date.now()-c.t<3600000){WAD=c.d;waApply("");return}
+  if(navigator.onLine===false){
+    if(c){WAD=c.d;WAD.stale=c.t;waApply("")}else{WAD=null;waApply("Hors ligne : vents en altitude indisponibles.")}
+    return;
+  }
+  $("waSt").textContent="Chargement des vents en altitude…";
+  var j=null,err="";
+  try{
+    var ctl=new AbortController(),tm=setTimeout(function(){ctl.abort()},12000);
+    var r=await fetch(waUrl(lats,lons),{signal:ctl.signal});clearTimeout(tm);
+    if(!r.ok)err="erreur "+r.status;else j=await r.json();
+  }catch(e){err="réseau"}
+  if(tok!==waTok)return;
+  if(!j||(!Array.isArray(j)&&!j.hourly)){
+    if(c){WAD=c.d;WAD.stale=c.t;waApply("")}
+    else{WAD=null;waApply("Vents en altitude indisponibles ("+(err||"réponse vide")+"). Dans l’aperçu de claude.ai, les requêtes externes sont bloquées : ouvre la version hébergée. Les calculs utilisent le vent de surface.")}
+    return;
+  }
+  var arr=Array.isArray(j)?j:[j],out=[],bad=0;
+  arr.forEach(function(loc,i){
+    var h=loc.hourly,idx=(h&&h.time)?waIdx(h.time,tms[i]):-1,w=idx>=0?waAt(h,idx,alt):null;
+    if(!w)bad++;
+    out.push(w?{wd:w.wd,ws:w.ws}:null);
+  });
+  var mi=Math.floor(arr.length/2),hp=arr[mi]&&arr[mi].hourly,pi=(hp&&hp.time)?waIdx(hp.time,tms[mi]):-1,prof=[];
+  if(pi>=0)[2000,4000,6000,9000,12000].forEach(function(a){var w=waAt(hp,pi,a);if(w)prof.push({a:a,wd:w.wd,ws:w.ws})});
+  WAD={alt:alt,legs:out,prof:prof,t:Date.now(),noDep:!ft};
+  WAC[sig]={t:Date.now(),d:WAD};
+  Object.keys(WAC).sort(function(a,b){return WAC[b].t-WAC[a].t}).slice(3).forEach(function(k){delete WAC[k]});
+  waSave();
+  waApply(bad===out.length?"Heure du vol hors de la période de prévision (environ 4 jours).":"");
+}
+function waApply(msg){
+  var on=!(S.wa&&S.wa.on===false);
+  S.pts.forEach(function(p){delete p.awd;delete p.aws});
+  if(WAD&&on)WAD.legs.forEach(function(w,i){var p=S.pts[i];if(p&&w){p.awd=Math.round(w.wd)||360;p.aws=Math.round(w.ws)}});
+  waRender(msg);refresh();
+}
+function waRender(msg){
+  var st=$("waSt"),box=$("wa");
+  if(!WAD){st.textContent=msg||(S.pts.length<2?"Ajoute deux points à la route pour obtenir les vents en altitude.":"");box.innerHTML="";return}
+  var C=compute();
+  st.textContent="Source : Open-Meteo, prévision de modèle numérique (pas le produit officiel de NAV CANADA), à "+sp(Math.round(WAD.alt))+" ft, pour l’heure du vol"+(WAD.noDep?" (heure de départ non saisie : prévision pour dans 1 h)":"")+". Vents en degrés vrais. Mis à jour à "+hhmm(WAD.t)+"."+(WAD.stale?" Données enregistrées (sans réseau).":"")+(msg?" "+msg:"");
+  var h="<div class=\"leg\"><h3>Vent à "+sp(Math.round(WAD.alt))+" ft sur chaque tronçon</h3><div class=\"lg\">";
+  C.legs.forEach(function(L,i){var w=WAD.legs[i];h+=cell((i+1)+". "+esc(L.a.n)+" → "+esc(L.b.n),w?(w.ws<1?"Calme":deg(w.wd)+" / "+Math.round(w.ws)+" kt"):"--")});
+  h+="</div></div>";
+  if(WAD.prof.length)h+="<div class=\"leg\"><h3>Profil près du milieu de la route</h3><div class=\"lg\">"+WAD.prof.map(function(p){return cell(sp(p.a)+" ft",p.ws<1?"Calme":deg(p.wd)+" / "+Math.round(p.ws)+" kt")}).join("")+"</div></div>";
+  box.innerHTML=h;
+}
+$("wa_alt").addEventListener("input",function(){if(!S.wa)S.wa={};S.wa.alt=$("wa_alt").value;refresh()});
+$("wa_on").addEventListener("change",function(){if(!S.wa)S.wa={};S.wa.on=$("wa_on").checked;if(WAD)waApply("");else refresh()});
+setInterval(function(){if(document.visibilityState==="visible"&&navigator.onLine!==false&&S.pts.length>1)waLoad(true)},1800000);
+
 function fmtMin(m){return m==null?"--":clock(m)}
 function updateResUi(C){
   var RI=C.RI,msg="",nn="";
@@ -2619,6 +2746,9 @@ function updateResUi(C){
   $("resNote").textContent=msg;$("nightNote").textContent=nn;
 }
 function refresh(){
+  var rsig=S.pts.map(function(p){return p.la.toFixed(3)+","+p.lo.toFixed(3)}).join(";"),tsig=S.date+"|"+S.dep+"|"+cruiseAlt()+"|"+Math.round(S.cruise);
+  if(rsig!==lastRouteSig){lastRouteSig=rsig;lastTimeSig=tsig;S.pts.forEach(function(p){delete p.awd;delete p.aws});scheduleWa()}
+  else if(tsig!==lastTimeSig){lastTimeSig=tsig;scheduleWa()}
   var C=compute();
   updateResUi(C);
   renderSummary(C);renderLegs(C);renderLegWinds(C);drawRoute(C);pfRender(C);clRender(C);buildVerdict(C);buildPrint(C);save();
@@ -2632,6 +2762,7 @@ if(!S.date||S.date<todayStr())S.date=todayStr();
 if(!S.wb)S.wb={};
 if(!S.pf)S.pf={dep:{},arr:{},margin:25};
 if(!S.cl)S.cl={};
+if(!S.wa)S.wa={};
 buildPfUi();
 syncInputs();renderPoints();refresh();drawApts();drawGrid();
 showStep(1);

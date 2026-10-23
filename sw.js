@@ -1,5 +1,5 @@
 /* Plan Vol : cache hors ligne. Change VERSION à chaque nouvelle version de l'app pour forcer la mise à jour. */
-var VERSION="planvol-v3",TILES="planvol-tiles",FONTS="planvol-fonts";
+var VERSION="planvol-v4",TILES="planvol-tiles",FONTS="planvol-fonts";
 var CORE=["./","index.html","manifest.webmanifest","icon-180.png","icon-192.png","icon-512.png","icon-maskable-512.png"];
 self.addEventListener("install",function(e){
   e.waitUntil(caches.open(VERSION).then(function(c){return c.addAll(CORE)}).then(function(){return self.skipWaiting()}));
