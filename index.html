@@ -684,7 +684,7 @@ h2{font-size:16px;margin:0 0 8px}
 .mono{font-family:"B612 Mono",ui-monospace,monospace}
 .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px;min-width:0}
 label{display:block;font-size:12px;color:var(--mute);margin-bottom:2px}
-select,input[type=text],input[type=number],input[type=time],input[type=date]{width:100%;min-width:0;font:inherit;font-family:"B612 Mono",ui-monospace,monospace;font-size:16px;padding:9px 10px;border-radius:8px;border:1px solid var(--line);background:var(--field);color:var(--ink)}
+select,input[type=tel],input[type=text],input[type=number],input[type=time],input[type=date]{width:100%;min-width:0;font:inherit;font-family:"B612 Mono",ui-monospace,monospace;font-size:16px;padding:9px 10px;border-radius:8px;border:1px solid var(--line);background:var(--field);color:var(--ink)}
 input:disabled{opacity:.6}
 input:focus-visible,button:focus-visible,summary:focus-visible{outline:2px solid var(--cyan);outline-offset:2px}
 .steps{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:4px}
@@ -714,6 +714,8 @@ input:focus-visible,button:focus-visible,summary:focus-visible{outline:2px solid
 #map.adding{cursor:crosshair}
 .note{font-size:13px;color:var(--mute);margin:8px 0 0}
 .note.bad{color:var(--bad)}
+.chip{display:inline-flex;gap:6px;align-items:center;flex-wrap:wrap;padding:4px 8px;border:1px solid var(--line);border-radius:8px;margin:3px 4px 3px 0;font-size:13px}
+.chip .btn{padding:2px 8px;font-size:12px}
 .vdbar{display:block;width:100%;text-align:left;margin:8px 0 0;padding:9px 12px;border-radius:8px;border:1px solid var(--line);background:var(--panel);color:var(--ink);font:600 14px/1.3 inherit;cursor:pointer}
 .vdbar.ok{border-color:var(--ok)}.vdbar.warn{border-color:var(--amber)}.vdbar.bad{border-color:var(--bad)}
 .vdh{font-weight:700;font-size:16px;padding:8px 12px;border-radius:8px;margin-bottom:6px}
@@ -868,6 +870,7 @@ pre.code{font:11px "B612 Mono",monospace;background:var(--panel);border:1px soli
       <div><label for="decl">Déclinaison (° ouest)</label><input id="decl" type="number" inputmode="decimal" step="0.5"></div>
     </div>
     <p class="note" id="nightNote"></p>
+    <p class="note" id="sunNote"></p>
     <p class="note">Ce vent s’applique à toute la route. Pour un tronçon différent, remplis ses champs ci-dessous. Laisse vide pour garder le vent général.</p>
     <h2 style="margin-top:14px">Vent par tronçon (facultatif)</h2>
     <div class="list" id="lw"></div>
@@ -881,6 +884,10 @@ pre.code{font:11px "B612 Mono",monospace;background:var(--panel);border:1px soli
     <p class="note" id="waSt"></p>
     <div class="list" id="wa" style="margin-top:8px"></div>
 
+    <h2 style="margin-top:18px">Altitude de croisière conseillée</h2>
+    <p class="note" style="margin-top:0">Compare des altitudes de croisière avec les vents du modèle et le tableau de croisière du manuel (DA20-C1).</p>
+    <div id="altAdv"></div>
+
     <h2 style="margin-top:18px">Météo des aéroports (METAR et TAF)</h2>
     <p class="note" style="margin-top:0">La météo se charge toute seule dès que la route change. Source : NAV CANADA. Les stations sont les aéroports de ta route, et l’aéroport le plus proche (à 60 NM ou moins) pour les points hors aéroports. Jusqu’à 4 aéroports près de l’arrivée sont aussi vérifiés comme dégagements possibles.</p>
     <label class="chk" style="margin-top:8px"><input type="checkbox" id="autoOn"> Remplir automatiquement les calculs avec la météo (température, calage, vent, piste)</label>
@@ -893,6 +900,23 @@ pre.code{font:11px "B612 Mono",monospace;background:var(--panel);border:1px soli
     <input id="wxExtra" type="text" placeholder="CYMX CYSC" autocapitalize="characters" autocomplete="off" autocorrect="off" spellcheck="false">
     <p class="note" id="wxSt"></p>
     <div class="list" id="wx" style="margin-top:8px"></div>
+    <h2 style="margin-top:18px">Dégagement</h2>
+    <p class="note" style="margin-top:0">Laisse vide pour que l’app propose l’aéroport le plus proche de l’arrivée dont le METAR est en VFR ou MVFR. Distance en ligne droite.</p>
+    <div class="fields">
+      <div><label for="altn">Aéroport de dégagement (code, facultatif)</label><input id="altn" type="text" placeholder="auto" autocapitalize="characters" autocomplete="off" autocorrect="off" spellcheck="false"></div>
+    </div>
+    <label class="chk" style="margin-top:8px"><input type="checkbox" id="altOn"> Ajouter le carburant du dégagement au carburant requis</label>
+    <p class="note" id="altNote"></p>
+
+    <h2 style="margin-top:18px">Mes minimums personnels (facultatif)</h2>
+    <p class="note" style="margin-top:0">Laisse vide pour ne pas en utiliser. Le verdict signale tout ce qui passe sous tes minimums : METAR, TAF, et vent traversier pour le DA20.</p>
+    <div class="fields">
+      <div><label for="pm_ceil">Plafond minimal (ft)</label><input id="pm_ceil" type="number" inputmode="decimal" step="any" min="0"></div>
+      <div><label for="pm_vis">Visibilité minimale (SM)</label><input id="pm_vis" type="number" inputmode="decimal" step="any" min="0"></div>
+      <div><label for="pm_xw">Vent traversier maximal (kt)</label><input id="pm_xw" type="number" inputmode="decimal" step="any" min="0"></div>
+      <div><label for="pm_gust">Rafales maximales (kt)</label><input id="pm_gust" type="number" inputmode="decimal" step="any" min="0"></div>
+    </div>
+
     <details class="oaip">
       <summary>Si la météo ne s’affiche pas</summary>
       <p class="note">Autre source : CheckWX, avec une clé gratuite (3 000 requêtes par jour) créée sur <span class="mono">checkwxapi.com</span>. Si elle est remplie, la page l’essaie en premier, puis revient à NAV CANADA en cas d’échec.</p>
@@ -917,6 +941,21 @@ pre.code{font:11px "B612 Mono",monospace;background:var(--panel);border:1px soli
       <p class="note" id="wbOther" hidden style="margin-top:0">Le devis de masse et centrage et les distances de décollage et d’atterrissage sont programmés avec le manuel de vol du Diamond DA20-C1. Choisis cet avion à l’étape 1 pour les utiliser.</p>
       <div id="wbBox">
         <p class="note" style="margin-top:0">Limites, bras de levier et enveloppe : manuel de vol du DA20-C1. La masse à vide et son moment sont propres à ton avion : prends-les dans son rapport de masse et centrage à jour.</p>
+        <details class="oaip" style="margin-bottom:10px">
+          <summary>Mes avions et mes personnes (mémorisés sur cet appareil)</summary>
+          <p class="note">Enregistre la masse et le moment à vide de chaque avion (par immatriculation), puis charge-les en un clic. Fais de même pour le poids des personnes.</p>
+          <label for="m_reg">Immatriculation de l’avion</label>
+          <input id="m_reg" type="text" placeholder="C-GXXX" autocapitalize="characters" autocomplete="off" autocorrect="off" spellcheck="false">
+          <div class="tools" style="margin-top:8px"><button class="btn" id="m_acadd" type="button">Enregistrer avec la masse et le moment à vide ci-dessous</button></div>
+          <div id="m_acs"></div>
+          <div class="fields" style="margin-top:12px">
+            <div><label for="m_pn">Nom</label><input id="m_pn" type="text" autocomplete="off"></div>
+            <div><label for="m_pw">Poids (lb)</label><input id="m_pw" type="number" inputmode="decimal" step="any"></div>
+          </div>
+          <div class="tools" style="margin-top:8px"><button class="btn" id="m_padd" type="button">Enregistrer la personne</button></div>
+          <div id="m_ppl"></div>
+          <p class="note" id="m_msg" hidden></p>
+        </details>
         <div class="fields">
           <div><label for="wb_ew">Masse à vide (lb)</label><input id="wb_ew" type="number" inputmode="decimal" step="any"></div>
           <div><label for="wb_em">Moment à vide (po·lb)</label><input id="wb_em" type="number" inputmode="decimal" step="any"></div>
@@ -980,6 +1019,23 @@ pre.code{font:11px "B612 Mono",monospace;background:var(--panel);border:1px soli
       </div>
       <p class="note" id="copyMsg" hidden></p>
       <textarea id="out" readonly hidden aria-label="Texte du plan"></textarea>
+    </section>
+    <section class="card" style="margin-top:16px">
+      <h2>Itinéraire de vol VFR</h2>
+      <p class="note" style="margin-top:0">Aide-mémoire à recopier dans le formulaire de dépôt de plan de vol ou d’itinéraire. Plan Vol ne le dépose pas : vérifie chaque champ et ferme-le à l’arrivée.</p>
+      <div class="fields">
+        <div><label for="fp_reg">Immatriculation</label><input id="fp_reg" type="text" placeholder="C-GXXX" autocapitalize="characters" autocomplete="off" autocorrect="off" spellcheck="false"></div>
+        <div><label for="fp_pilot">Nom du pilote</label><input id="fp_pilot" type="text" autocomplete="off"></div>
+        <div><label for="fp_phone">Téléphone</label><input id="fp_phone" type="tel" autocomplete="off"></div>
+        <div><label for="fp_pob">Personnes à bord</label><input id="fp_pob" type="number" inputmode="numeric" min="1" placeholder="auto"></div>
+        <div><label for="fp_color">Couleur de l’avion</label><input id="fp_color" type="text" autocomplete="off"></div>
+        <div><label for="fp_elt">Radio de secours, ELT</label><input id="fp_elt" type="text" placeholder="ELT 406 MHz" autocomplete="off"></div>
+        <div><label for="fp_surv">Équipement de survie</label><input id="fp_surv" type="text" autocomplete="off"></div>
+        <div><label for="fp_rem">Remarques</label><input id="fp_rem" type="text" autocomplete="off"></div>
+      </div>
+      <div class="tools" style="margin-top:10px;margin-bottom:0"><button class="btn on" id="fpCopy" type="button">Copier l’itinéraire</button></div>
+      <p class="note" id="fpMsg" hidden></p>
+      <textarea id="fpOut" readonly aria-label="Itinéraire de vol VFR" style="width:100%;min-height:230px;margin-top:8px;font:12px 'B612 Mono',monospace;background:var(--field);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:8px"></textarea>
     </section>
     <section class="card" style="margin-top:16px">
       <h2>Tronçons</h2>
@@ -1114,8 +1170,8 @@ function compute(){
     legs.push({a:a,b:b,d:d,tc:tc,mc:tc+S.decl,mh:w.th+S.decl,wd:wd,ws:ws,w:w,ete:ete,fuel:ete*S.burn,eta:dep==null?null:dep+cum*60});
     tD+=d;tT+=ete;
   }
-  var RI=reserveInfo(dep,tT),trip=tT*S.burn,res=RI.min/60*S.burn,req=trip+S.taxi+res,margin=S.fuel-req;
-  return {RI:RI,resMin:RI.min,legs:legs,tD:tD,tT:tT,trip:trip,res:res,req:req,margin:margin,endu:S.fuel/S.burn,eta:dep==null?null:dep+tT*60};
+  var RI=reserveInfo(dep,tT),trip=tT*S.burn,res=RI.min/60*S.burn,AI=altInfo(),altFuel=(AI&&S.altOn!==false)?AI.fuel:0,req=trip+S.taxi+res+altFuel,margin=S.fuel-req;
+  return {alt:AI,altFuel:altFuel,RI:RI,resMin:RI.min,legs:legs,tD:tD,tT:tT,trip:trip,res:res,req:req,margin:margin,endu:S.fuel/S.burn,eta:dep==null?null:dep+tT*60};
 }
 
 /* ---------- Étapes ---------- */
@@ -1305,9 +1361,13 @@ function renderSummary(C){
   h+=cell("Carburant du trajet",C.trip.toFixed(1)+" gal");
   h+=cell("Roulage et montée",S.taxi.toFixed(1)+" gal");
   h+=cell("Réserve "+(C.RI.why==="manual"?"manuelle":(C.RI.night?"de nuit":"de jour"))+" ("+C.resMin+" min)",C.res.toFixed(1)+" gal");
+  h+=(C.alt&&S.altOn!==false?cell("Dégagement "+esc(C.alt.code)+" ("+Math.round(C.alt.d)+" NM)",C.altFuel.toFixed(1)+" gal"):"");
   h+=cell("Carburant requis",C.req.toFixed(1)+" gal");
   h+=cell("À bord",S.fuel.toFixed(1)+" gal");
   h+=cell("Marge",(C.margin>=0?"+":"")+C.margin.toFixed(1)+" gal",ok?"ok":"bad");
+  var SI0=sunInfo(C);
+  if(SI0&&SI0.arr.ce!==null)h+=cell("Fin du jour civil (arrivée)",clock(SI0.arr.ce));
+  if(SI0&&SI0.latest!==null)h+=cell("Départ au plus tard (de jour)",clock(SI0.latest));
   var capNote="";
   if(S.ac<AIRCRAFT.length-1&&S.fuel>AIRCRAFT[S.ac].f+0.05)capNote=" Le carburant à bord dépasse la capacité utilisable indiquée pour cet avion ("+AIRCRAFT[S.ac].f+" gal).";
   var bad=C.legs.some(function(l){return l.w.bad});
@@ -1344,6 +1404,7 @@ function planText(){
   C.legs.forEach(function(l,i){L.push((i+1)+". "+l.a.n+" > "+l.b.n+" : cap "+deg(l.mh)+" mag., "+l.d.toFixed(1)+" NM, GS "+Math.round(l.w.gs)+" kt, "+hm(l.ete)+", "+l.fuel.toFixed(1)+" gal"+(l.eta==null?"":", arrivée "+clock(l.eta)))});
   L.push("Total : "+C.tD.toFixed(0)+" NM, "+hm(C.tT)+", trajet "+C.trip.toFixed(1)+" gal");
   L.push("Roulage et montée "+S.taxi.toFixed(1)+" gal, réserve "+C.resMin+" min ("+C.res.toFixed(1)+" gal)");
+  if(C.alt&&S.altOn!==false)L.push("Dégagement "+C.alt.code+" : "+Math.round(C.alt.d)+" NM, "+C.altFuel.toFixed(1)+" gal (inclus dans le carburant requis)");
   L.push("Requis "+C.req.toFixed(1)+" gal, à bord "+S.fuel.toFixed(1)+" gal, marge "+C.margin.toFixed(1)+" gal");
   perfText().forEach(function(x){L.push(x)});
   vdText().forEach(function(x){L.push(x)});
@@ -1369,7 +1430,7 @@ function buildPrint(C){
     h+="<tr><td>"+(i+1)+"</td><td>"+esc(l.a.n)+" → "+esc(l.b.n)+"</td><td>"+deg(l.tc)+"</td><td>"+deg(l.mh)+"</td><td>"+l.d.toFixed(1)+"</td><td>"+deg(l.wd)+" / "+Math.round(l.ws)+"</td><td>"+Math.round(l.w.gs)+"</td><td>"+hm(l.ete)+"</td><td>"+l.fuel.toFixed(1)+"</td><td>"+(l.eta==null?"--":clock(l.eta))+"</td></tr>";
   });
   h+="<tr class=\"tot\"><td></td><td>Total</td><td></td><td></td><td>"+C.tD.toFixed(0)+"</td><td></td><td></td><td>"+hm(C.tT)+"</td><td>"+C.trip.toFixed(1)+"</td><td>"+(C.eta==null?"--":clock(C.eta))+"</td></tr></table>";
-  h+="<table><tr><th>Carburant du trajet</th><th>Roulage et montée</th><th>Réserve ("+C.resMin+" min)</th><th>Requis</th><th>À bord</th><th>Marge</th></tr><tr><td>"+C.trip.toFixed(1)+" gal</td><td>"+S.taxi.toFixed(1)+" gal</td><td>"+C.res.toFixed(1)+" gal</td><td>"+C.req.toFixed(1)+" gal</td><td>"+S.fuel.toFixed(1)+" gal</td><td>"+(C.margin>=0?"+":"")+C.margin.toFixed(1)+" gal</td></tr></table>";
+  h+="<table><tr><th>Carburant du trajet</th><th>Roulage et montée</th><th>Réserve ("+C.resMin+" min)</th>"+(C.altFuel>0?"<th>Dégagement "+esc(C.alt.code)+"</th>":"")+"<th>Requis</th><th>À bord</th><th>Marge</th></tr><tr><td>"+C.trip.toFixed(1)+" gal</td><td>"+S.taxi.toFixed(1)+" gal</td><td>"+C.res.toFixed(1)+" gal</td>"+(C.altFuel>0?"<td>"+C.altFuel.toFixed(1)+" gal</td>":"")+"<td>"+C.req.toFixed(1)+" gal</td><td>"+S.fuel.toFixed(1)+" gal</td><td>"+(C.margin>=0?"+":"")+C.margin.toFixed(1)+" gal</td></tr></table>";
   var vt0=LAST.vd;
   if(vt0){h+="<p><b>Verdict de préparation : "+esc(vt0.head)+"</b></p>";vt0.items.forEach(function(x){h+="<p>"+(x.l==="bad"?"[PROBLÈME] ":(x.l==="warn"?"[À VÉRIFIER] ":""))+esc(x.t)+"</p>"})}
   var pt=perfText();
@@ -1723,6 +1784,7 @@ function wbRender(W){
   });
   h+="<p class=\"note"+(W.ok&&!notes.length?"":" bad")+"\">"+(notes.length?esc(notes.join(" ")):"La masse et le centre de gravité restent dans l’enveloppe au départ et à l’arrivée.")+"</p>";
   h+="<p class=\"note\">Avec cette charge, le carburant maximal au décollage est d’environ "+W.fuelMax.toFixed(1)+" gal (limites de masse et carburant utilisable).</p>";
+  h+=wbChart(W);
   $("wbOut").innerHTML=h;
 }
 
@@ -1777,6 +1839,7 @@ function syncPf(){
   if(!S.wa)S.wa={};
   $("wa_alt").value=S.wa.alt===undefined?"":S.wa.alt;$("wa_alt").placeholder=String(cruiseAlt());
   $("wa_on").checked=S.wa.on!==false;
+  syncFeat();
 }
 async function pfMetar(which){
   var code=pfCode(which),m=$("pf_"+which+"_m");
@@ -2013,6 +2076,8 @@ function PdfDoc(){
     cur.push("BT "+(COL[col]||COL.k)+" rg /"+(mono?"F3":(bold?"F2":"F1"))+" "+size+" Tf "+x.toFixed(1)+" "+yy.toFixed(1)+" Td ("+pdfEsc(s)+") Tj ET");
   };
   this.line=function(x1,y1,x2,y2,wd,g){cur.push((g===undefined?"0.6":g)+" G "+(wd||0.5)+" w "+x1.toFixed(1)+" "+y1.toFixed(1)+" m "+x2.toFixed(1)+" "+y2.toFixed(1)+" l S")};
+  this.lineC=function(x1,y1,x2,y2,wd,rgb){cur.push(rgb+" RG "+(wd||0.5)+" w "+x1.toFixed(1)+" "+y1.toFixed(1)+" m "+x2.toFixed(1)+" "+y2.toFixed(1)+" l S")};
+  this.rectC=function(x,yy,w,h,rgb){cur.push(rgb+" rg "+x.toFixed(1)+" "+yy.toFixed(1)+" "+w.toFixed(1)+" "+h.toFixed(1)+" re f")};
   this.rect=function(x,yy,w,h,fill){cur.push((fill?fill+" g ":"")+x.toFixed(1)+" "+yy.toFixed(1)+" "+w.toFixed(1)+" "+h.toFixed(1)+" re "+(fill?"f":"S"))};
   this.wrap=function(s,width,size,bold,mono){
     var out=[],paras=String(s).split("\n"),k,words,ln,t,w;
@@ -2107,7 +2172,8 @@ function buildPdf(){
   rows.push(["","Total","","",C.tD.toFixed(0),"","",hm(C.tT),C.trip.toFixed(1),C.eta==null?"--":clock(C.eta)]);
   D.table([20,112,50,46,42,58,38,52,46,48],["#","De > à","Route vraie","Cap mag.","Dist. NM","Vent","GS kt","Temps","Carb. gal","Arrivée"],rows,{boldLast:true});
   D.h2("Carburant");
-  D.table([1,1,1,1,1,1],["Trajet","Roulage et montée","Réserve ("+C.resMin+" min)","Requis","À bord","Marge"],[[C.trip.toFixed(1)+" gal",S.taxi.toFixed(1)+" gal",C.res.toFixed(1)+" gal",C.req.toFixed(1)+" gal",S.fuel.toFixed(1)+" gal",{t:(C.margin>=0?"+":"")+C.margin.toFixed(1)+" gal",c:C.margin>=0?"ok":"bad",b:true}]]);
+  var hasAlt=C.altFuel>0;
+  D.table(hasAlt?[1,1,1,1,1,1,1]:[1,1,1,1,1,1],["Trajet","Roulage et montée","Réserve ("+C.resMin+" min)"].concat(hasAlt?["Dégagement "+C.alt.code]:[]).concat(["Requis","À bord","Marge"]),[[C.trip.toFixed(1)+" gal",S.taxi.toFixed(1)+" gal",C.res.toFixed(1)+" gal"].concat(hasAlt?[C.altFuel.toFixed(1)+" gal"]:[]).concat([C.req.toFixed(1)+" gal",S.fuel.toFixed(1)+" gal",{t:(C.margin>=0?"+":"")+C.margin.toFixed(1)+" gal",c:C.margin>=0?"ok":"bad",b:true}])]);
   D.para(C.margin>=0?"Assez de carburant avec la réserve ("+(C.margin/S.burn*60).toFixed(0)+" min de marge).":"Carburant insuffisant : il manque "+(-C.margin).toFixed(1)+" gal pour garder la réserve.",{size:9.5,bold:true,col:C.margin>=0?"ok":"bad"});
   /* Météo */
   var codes=Object.keys(WX);
@@ -2136,6 +2202,7 @@ function buildPdf(){
       D.table([1.1,1,1,1,1.2,1.2,1.1],["Condition","Carburant","Masse","Maximum","Moment (po·lb)","CG (po) / limites","Verdict"],W.conds.map(function(c){return [c.n,c.fuel.toFixed(1)+" gal",{t:Math.round(c.w)+" lb",c:c.inW?undefined:"bad"},c.max+" lb",sp(Math.round(c.m)),{t:c.arm.toFixed(2)+" / "+c.fwd.toFixed(2)+" à "+c.aft.toFixed(2),c:c.inC?undefined:"bad"},{t:c.ok?"OK":"HORS LIMITES",c:c.ok?"ok":"bad",b:true}]}));
       W.msgs.forEach(function(m){D.para(m,{size:9,col:"bad"})});
       D.para("Carburant maximal au décollage avec cette charge : environ "+W.fuelMax.toFixed(1)+" gal.",{size:9});
+      pdfWbChart(D,W);
     }
     var P=L.pf;
     D.h2("Décollage et atterrissage");
@@ -2171,6 +2238,8 @@ function buildPdf(){
       D.para("Valeurs à la masse maximale (1 764 lb), sans vent."+((S.cl&&S.cl.nof)?" Sans carénages de roues (−3 %).":""),{size:8.5,col:"mute"});
     }
   }else D.para("Le devis de masse et les performances sont programmés pour le Diamond DA20-C1 seulement.",{size:9,col:"mute"});
+  var fpr=fpRows();
+  if(fpr.length){D.h2("Itinéraire de vol VFR (aide-mémoire)");D.table([1,3],["Champ","Valeur"],fpr.map(function(x){return [x[0],x[1]]}));D.para("Vérifie chaque champ avant le dépôt du plan de vol ou de l’itinéraire, et ferme-le à l’arrivée.",{size:8.5,col:"mute"})}
   D.h2("Notes");
   D.para("Briefing météo officiel : flightplanning.navcanada.ca · FIC 1-866-WXBRIEF (1-866-992-7433) · 1-866-GOMÉTÉO.",{size:8.5,col:"mute",after:3});
   D.para("NOTAM à consulter : "+(wxStations().join(", ")||"--")+" (service de planification de vol de NAV CANADA).",{size:8.5,col:"mute",after:3});
@@ -2299,7 +2368,9 @@ function autoAlts(st){
     if(d>=8&&d<=80)c.push([d,k]);
   });
   c.sort(function(x,y){return x[0]-y[0]});
-  return c.slice(0,4).map(function(x){return x[1]});
+  var o=c.slice(0,4).map(function(x){return x[1]}),ch=(S.altn||"").trim().toUpperCase();
+  if(ch&&APT[ch]&&st.indexOf(ch)<0&&o.indexOf(ch)<0)o.unshift(ch);
+  return o;
 }
 function scheduleAuto(d){clearTimeout(autoTimer);autoTimer=setTimeout(function(){if(S.pts.length)loadWx(false)},d===undefined?1200:d)}
 async function loadWx(force){
@@ -2458,12 +2529,15 @@ function parseTaf(txt){
 function tafWin(P,t1,t2){
   if(!P)return null;
   if(t2<P.vf||t1>P.vt)return {covered:false};
-  var R={covered:true,base:-1,baseSt:null,temp:-1,tempSt:null,wmax:0,gmax:0};
+  var R={covered:true,base:-1,baseSt:null,temp:-1,tempSt:null,wmax:0,gmax:0,mvB:99,mcB:99999,mvT:99,mcT:99999};
   function w(b,tmp){
     if(!(b.from<t2&&b.to>t1))return;
     var r=stRank(b.st);
     if(!tmp&&r>R.base){R.base=r;R.baseSt=b.st}
     if(tmp&&r>R.temp){R.temp=r;R.tempSt=b.st}
+    var vv=b.st.vis===undefined?99:b.st.vis,cc=99999;
+    (b.st.clouds||[]).forEach(function(k){if((k.c==="BKN"||k.c==="OVC"||k.c==="VV")&&k.ft<cc)cc=k.ft});
+    if(tmp){R.mvT=Math.min(R.mvT,vv);R.mcT=Math.min(R.mcT,cc)}else{R.mvB=Math.min(R.mvB,vv);R.mcB=Math.min(R.mcB,cc)}
     R.wmax=Math.max(R.wmax,b.st.wspd||0);R.gmax=Math.max(R.gmax,b.st.gust||0);
   }
   P.bases.forEach(function(b){w(b,false)});
@@ -2495,7 +2569,13 @@ function fcEval(code,C,ft){
   var g=Math.max(T.wmax,T.gmax);
   if(g>=25){txt+=", vent jusqu’à "+g+" kt";if(lvl==="ok")lvl="warn"}
   else if(T.gmax>=20&&T.gmax>=T.wmax+10){txt+=", rafales jusqu’à "+T.gmax+" kt";if(lvl==="ok")lvl="warn"}
-  return {lvl:lvl,txt:txt+"."};
+  var pb=[],pt=[],pmbad=false;
+  if(pmVal("ceil")!==null){if(T.mcB<pmVal("ceil"))pb.push("plafond "+sp(T.mcB)+" ft");else if(T.mcT<pmVal("ceil"))pt.push("plafond "+sp(T.mcT)+" ft")}
+  if(pmVal("vis")!==null){if(T.mvB<pmVal("vis"))pb.push("visibilité "+fr(+T.mvB.toFixed(1))+" SM");else if(T.mvT<pmVal("vis"))pt.push("visibilité "+fr(+T.mvT.toFixed(1))+" SM")}
+  if(pmVal("gust")!==null&&T.gmax>pmVal("gust"))pb.push("rafales "+T.gmax+" kt");
+  if(pb.length){txt+=", sous tes minimums ("+pb.join(", ")+")";lvl="bad";pmbad=true}
+  else if(pt.length){txt+=", temporairement sous tes minimums ("+pt.join(", ")+")";if(lvl!=="bad")lvl="warn"}
+  return {lvl:lvl,txt:txt+".",pmbad:pmbad,pmtmp:pt.length>0};
 }
 
 /* ---------- Verdict de préparation ---------- */
@@ -2508,7 +2588,7 @@ function metarBrief(o){
   return p.join(", ");
 }
 function buildVerdict(C){
-  var it=[],box=$("vd"),isDA=AIRCRAFT[S.ac].n===DA20;
+  var it=[],box=$("vd"),isDA=AIRCRAFT[S.ac].n===DA20,pmBad=false,pmTmp=false,AI=altInfo();LAST.aa=null;
   function add(l,t){it.push({l:l,t:t})}
   if(S.pts.length<2){LAST.vd=null;$("vdBar").hidden=true;box.innerHTML="<p class=\"note\" style=\"margin-top:0\">Ajoute au moins deux points à l’étape Route pour obtenir le verdict.</p>";return}
   var ft=flightTimes(C),dc=wxCodeFor(S.pts[0]),ac=wxCodeFor(S.pts[S.pts.length-1]),arrBad=false,arrCat=null;
@@ -2526,11 +2606,16 @@ function buildVerdict(C){
       if(old&&lvl==="ok")lvl="warn";
       add(lvl,x[0]+" "+code+" : "+(o.cat==="NA"?"catégorie inconnue":o.cat)+" — "+metarBrief(o)+(r.stale?". Données enregistrées de "+hhmm(r.t)+" (sans réseau)":"")+(old?". METAR trop ancien pour s’y fier":"")+".");
       if(!x[2]){arrCat=o.cat;if(lvl==="bad")arrBad=true}
+      var pmv=[];
+      if(pmVal("ceil")!==null&&o.ceil!==null&&o.ceil<pmVal("ceil"))pmv.push("plafond "+sp(o.ceil)+" ft sous "+sp(pmVal("ceil"))+" ft");
+      if(pmVal("vis")!==null&&o.vis!==undefined&&o.vis<pmVal("vis"))pmv.push("visibilité "+fr(+o.vis.toFixed(1))+" SM sous "+fr(pmVal("vis"))+" SM");
+      if(pmVal("gust")!==null&&(o.gust||0)>pmVal("gust"))pmv.push("rafales à "+o.gust+" kt au-dessus de "+pmVal("gust")+" kt");
+      if(pmv.length){pmBad=true;add("bad",x[0]+" "+code+" : sous tes minimums personnels ("+pmv.join(", ")+").")}
       if(o.temp!==undefined&&o.dew!==undefined&&o.temp-o.dew<=3)add("warn",code+" : écart température et rosée de "+(o.temp-o.dew)+" °C, risque de brouillard ou de nuages bas.");
       if(o.gust&&o.gust>=25)add("warn",code+" : rafales à "+o.gust+" kt.");
     }
     var fc=fcEval(code,C,ft);
-    if(fc){add(fc.lvl,"TAF "+code+" : "+fc.txt);if(!x[2]&&fc.lvl==="bad")arrBad=true}
+    if(fc){if(fc.pmbad)pmBad=true;if(fc.pmtmp)pmTmp=true;add(fc.lvl,"TAF "+code+" : "+fc.txt);if(!x[2]&&fc.lvl==="bad")arrBad=true}
     else if(r.metar||r.fail===false)add("info","TAF "+code+" : aucun TAF pour cette station.");
   });
   /* Stations en route */
@@ -2542,15 +2627,21 @@ function buildVerdict(C){
   if(mids.length)add("warn","En route : "+mids.join(", ")+".");
   Object.keys(WX).forEach(function(k){
     var r=WX[k];if(r.alt||k===dc||k===ac||!r.taf||!ft)return;
-    var fc=fcEval(k,C,ft);if(fc&&fc.lvl!=="ok"&&fc.lvl!=="info")add(fc.lvl,"TAF "+k+" (en route) : "+fc.txt);
+    var fc=fcEval(k,C,ft);if(fc){if(fc.pmbad)pmBad=true;if(fc.pmtmp)pmTmp=true}if(fc&&fc.lvl!=="ok"&&fc.lvl!=="info")add(fc.lvl,"TAF "+k+" (en route) : "+fc.txt);
   });
   /* Dégagement */
   var alts=Object.keys(WX).filter(function(k){return WX[k].alt&&WX[k].metar}).map(function(k){
     var o=parseMetar(WX[k].metar),a=APT[k],e=S.pts[S.pts.length-1];
     return {k:k,o:o,d:dist(e.la,e.lo,a[0],a[1])};
   }).filter(function(a){return a.o.cat==="VFR"||a.o.cat==="MVFR"}).sort(function(a,b){return a.d-b.d});
-  if(alts.length)add(arrBad&&alts[0].o.cat!=="VFR"?"warn":"info","Dégagement possible : "+alts[0].k+" ("+alts[0].o.cat+", "+Math.round(alts[0].d)+" NM de l’arrivée)"+(alts[1]?" ou "+alts[1].k+" ("+alts[1].o.cat+", "+Math.round(alts[1].d)+" NM)":"")+".");
-  else if(arrBad)add("bad","Arrivée sous les minimums VFR et aucun dégagement avec METAR en VFR ou MVFR trouvé près de l’arrivée.");
+  if(alts.length&&!AI)add(arrBad&&alts[0].o.cat!=="VFR"?"warn":"info","Dégagement possible : "+alts[0].k+" ("+alts[0].o.cat+", "+Math.round(alts[0].d)+" NM de l’arrivée)"+(alts[1]?" ou "+alts[1].k+" ("+alts[1].o.cat+", "+Math.round(alts[1].d)+" NM)":"")+".");
+  else if(arrBad&&!AI)add("bad","Arrivée sous les minimums VFR et aucun dégagement avec METAR en VFR ou MVFR trouvé près de l’arrivée.");
+  if(AI){
+    var ar=WX[AI.code],ao=(ar&&ar.metar)?parseMetar(ar.metar):null;
+    add(ao?(ao.cat==="VFR"?"info":(ao.cat==="MVFR"?"warn":"bad")):"warn","Dégagement "+AI.src+" : "+AI.code+" ("+(ao?ao.cat:"METAR indisponible")+"), "+Math.round(AI.d)+" NM de l’arrivée, "+AI.fuel.toFixed(1)+" gal"+(S.altOn!==false?" ajoutés au carburant requis":", non comptés dans le carburant requis")+".");
+    var afc=(ar&&ar.taf)?fcEval(AI.code,C,ft):null;
+    if(afc&&afc.lvl!=="info")add(afc.lvl==="ok"?"info":afc.lvl,"TAF "+AI.code+" (dégagement) : "+afc.txt);
+  }
   /* Performances du DA20 */
   var P=LAST.pf,W=LAST.wb,Q=LAST.cl;
   if(isDA&&P){
@@ -2561,6 +2652,7 @@ function buildVerdict(C){
       var ax=Math.abs(I.xw),lvl="ok",txt=nm+" piste "+I.rt+" : vent de face "+Math.round(I.hw)+" kt, traversier "+Math.round(ax)+" kt";
       if(ax>20){lvl="bad";txt+=" (au-dessus du maximum démontré de 20 kt)"}
       else if(ax>=15){lvl="warn";txt+=" (près du maximum démontré de 20 kt)"}
+      if(pmVal("xw")!==null&&ax>pmVal("xw")){lvl="bad";pmBad=true;txt+=" (au-dessus de ton minimum personnel de "+pmVal("xw")+" kt)"}
       if(I.hw<-3){if(lvl==="ok")lvl="warn";txt+=", vent arrière"}
       var d=null;
       if(w==="dep"&&o.t&&!o.t.out)d=o.t.d50*P.marg*3.28084;
@@ -2592,11 +2684,17 @@ function buildVerdict(C){
   /* Carburant */
   var mmin=C.margin/S.burn*60;
   if(C.margin<0)add("bad","Carburant : il manque "+(-C.margin).toFixed(1)+" gal pour garder la réserve de "+C.resMin+" min.");
-  else add(mmin<20?"warn":"ok","Carburant : "+S.fuel.toFixed(1)+" gal à bord, "+C.req.toFixed(1)+" requis avec la réserve de "+C.resMin+" min, soit "+Math.round(mmin)+" min de marge.");
+  else add(mmin<20?"warn":"ok","Carburant : "+S.fuel.toFixed(1)+" gal à bord, "+C.req.toFixed(1)+" requis avec la réserve de "+C.resMin+" min"+(C.altFuel>0?" et le dégagement "+C.alt.code+" ("+C.altFuel.toFixed(1)+" gal)":"")+", soit "+Math.round(mmin)+" min de marge.");
   if(C.legs.some(function(l){return l.w.bad}))add("bad","Le vent saisi est trop fort sur au moins un tronçon pour tenir la route.");
   /* Jour et nuit */
   if(C.RI.night)add("warn","Vol de nuit ("+(C.RI.why==="depnight"?"départ":"arrivée")+" après la fin du crépuscule civil) : réserve portée à 45 min. Vérifie l’équipement de l’avion et tes qualifications.");
   else if(C.RI.why==="nodep")add("info","Entre la date et l’heure de départ pour vérifier jour ou nuit, l’heure d’arrivée et le TAF à l’heure du vol.");
+  var SI=sunInfo(C);
+  if(SI&&SI.latest!==null){
+    var dm=depMin();
+    if(dm!==null){var marg=SI.arr.ce-(dm+C.tT*60);if(marg>=0&&marg<30)add("warn","Arrivée prévue à "+clock(dm+C.tT*60)+", soit "+Math.round(marg)+" min avant la fin du crépuscule civil ("+clock(SI.arr.ce)+").")}
+    add("info","Jour : départ de jour à partir de "+clock(SI.dep.cs)+" ; pour arriver avant la fin du crépuscule civil ("+clock(SI.arr.ce)+", coucher du soleil à "+clock(SI.arr.set)+"), départ au plus tard à "+clock(SI.latest)+" (heure de ton appareil).");
+  }
   /* Vents en altitude */
   if(WAD&&!(S.wa&&S.wa.on===false)){
     var wp=[],mxw=0;
@@ -2610,6 +2708,10 @@ function buildVerdict(C){
   $("notamNote").textContent=ntxt?"Aérodromes à saisir pour les NOTAM : "+ntxt+".":"";
   /* Vent */
   if(S.windAuto&&S.windMan!==true&&S.ws>0)add("info","Vent de la route : "+deg(S.wd)+" / "+S.ws+" kt, calculé à partir des vents de surface. Compare avec les vents en altitude (GFA, prévisions de vents) avant le vol.");
+  var AA=altAdvice(C);LAST.aa=AA;
+  if(AA&&AA.best&&AA.cur&&AA.best!==AA.cur&&AA.cur.time-AA.best.time>=3/60&&(AA.best.vfr||AA.best.low))add("info","Altitude conseillée : "+sp(AA.best.a)+" ft, "+hm(AA.best.time)+" au lieu de "+hm(AA.cur.time)+" à "+sp(AA.cur.a)+" ft (modèle de vents, à vérifier). Détails à l’étape Conditions.");
+  if(pmActive()&&!pmBad&&pmTmp)add("warn","Mes minimums personnels : respectés au départ et à l’arrivée, mais le TAF prévoit un passage sous tes minimums pendant le vol (voir plus haut).");
+  else if(pmActive()&&!pmBad)add("ok","Mes minimums personnels : respectés pour le METAR et le TAF"+(isDA&&pmVal("xw")!==null?" et le vent traversier":"")+".");
   var mx=0;it.forEach(function(x){mx=Math.max(mx,x.l==="bad"?2:(x.l==="warn"?1:0))});
   var head=mx===2?"À régler avant le départ":(mx===1?"À vérifier avant le départ":"Aucun point bloquant détecté");
   LAST.vd={head:head,lvl:mx,items:it};
@@ -2632,6 +2734,7 @@ function vdText(){
 
 /* ---------- Vents en altitude (prévision de modèle, Open-Meteo) ---------- */
 var WAC={},WAKEY="planvol_wa",waTimer=null,waTok=0,WAD=null,lastRouteSig="",lastTimeSig="",WA_LV=[1000,975,950,925,900,850,800,700,600,500];
+var WA_ALTS=[2500,3500,4500,5500,6500,7500,8500,9500,10500];
 (function(){try{var j=localStorage.getItem(WAKEY);if(j){WAC=JSON.parse(j)||{};var lim=Date.now()-6*3600000;Object.keys(WAC).forEach(function(k){if(!WAC[k]||WAC[k].t<lim)delete WAC[k]})}}catch(e){WAC={}}})();
 function waSave(){try{localStorage.setItem(WAKEY,JSON.stringify(WAC))}catch(e){}}
 function cruiseAlt(){
@@ -2696,15 +2799,17 @@ async function waLoad(force){
     else{WAD=null;waApply("Vents en altitude indisponibles ("+(err||"réponse vide")+"). Dans l’aperçu de claude.ai, les requêtes externes sont bloquées : ouvre la version hébergée. Les calculs utilisent le vent de surface.")}
     return;
   }
-  var arr=Array.isArray(j)?j:[j],out=[],bad=0;
+  var arr=Array.isArray(j)?j:[j],out=[],bad=0,byAlt={};
+  WA_ALTS.forEach(function(a){byAlt[a]=[]});
   arr.forEach(function(loc,i){
     var h=loc.hourly,idx=(h&&h.time)?waIdx(h.time,tms[i]):-1,w=idx>=0?waAt(h,idx,alt):null;
     if(!w)bad++;
     out.push(w?{wd:w.wd,ws:w.ws}:null);
+    WA_ALTS.forEach(function(a){var x=idx>=0?waAt(h,idx,a):null;byAlt[a].push(x?{wd:x.wd,ws:x.ws}:null)});
   });
   var mi=Math.floor(arr.length/2),hp=arr[mi]&&arr[mi].hourly,pi=(hp&&hp.time)?waIdx(hp.time,tms[mi]):-1,prof=[];
   if(pi>=0)[2000,4000,6000,9000,12000].forEach(function(a){var w=waAt(hp,pi,a);if(w)prof.push({a:a,wd:w.wd,ws:w.ws})});
-  WAD={alt:alt,legs:out,prof:prof,t:Date.now(),noDep:!ft};
+  WAD={alt:alt,legs:out,prof:prof,byAlt:byAlt,t:Date.now(),noDep:!ft};
   WAC[sig]={t:Date.now(),d:WAD};
   Object.keys(WAC).sort(function(a,b){return WAC[b].t-WAC[a].t}).slice(3).forEach(function(k){delete WAC[k]});
   waSave();
@@ -2731,6 +2836,273 @@ $("wa_alt").addEventListener("input",function(){if(!S.wa)S.wa={};S.wa.alt=$("wa_
 $("wa_on").addEventListener("change",function(){if(!S.wa)S.wa={};S.wa.on=$("wa_on").checked;if(WAD)waApply("");else refresh()});
 setInterval(function(){if(document.visibilityState==="visible"&&navigator.onLine!==false&&S.pts.length>1)waLoad(true)},1800000);
 
+/* ---------- Minimums personnels, soleil, altitude conseillée, dégagement, graphique CG, itinéraire, mémoire ---------- */
+function pmVal(k){var v=num(S.pm&&S.pm[k],null);return (v!==null&&v>0)?v:null}
+function pmActive(){return pmVal("ceil")!==null||pmVal("vis")!==null||pmVal("xw")!==null||pmVal("gust")!==null}
+
+/* Soleil : lever, coucher, début et fin du crépuscule civil (minutes, heure de l'appareil) */
+var SUNC={};
+function sunTimes(la,lo,ds){
+  var key=la.toFixed(2)+","+lo.toFixed(2)+","+ds;
+  if(SUNC[key])return SUNC[key];
+  var o={rise:null,set:null,cs:null,ce:null},m,ps=false,pc=false;
+  for(m=0;m<1440;m++){
+    var d=localDate(ds,m);if(!d||isNaN(d.getTime()))return o;
+    var e=solarElev(d,la,lo),s=e>-0.833,c=e>-6;
+    if(s&&!ps&&o.rise===null)o.rise=m;
+    if(!s&&ps)o.set=m;
+    if(c&&!pc&&o.cs===null)o.cs=m;
+    if(!c&&pc)o.ce=m;
+    ps=s;pc=c;
+  }
+  SUNC[key]=o;return o;
+}
+function sunInfo(C){
+  if(S.pts.length<2||!S.date)return null;
+  var a=S.pts[0],b=S.pts[S.pts.length-1],A=sunTimes(a.la,a.lo,S.date),B=sunTimes(b.la,b.lo,S.date);
+  return {dep:A,arr:B,latest:(B.ce!==null)?B.ce-C.tT*60:null};
+}
+
+/* Dégagement : choisi à la main, sinon l'aéroport le plus proche de l'arrivée dont le METAR est VFR ou MVFR */
+function altInfo(){
+  if(S.pts.length<2)return null;
+  var e=S.pts[S.pts.length-1],code=(S.altn||"").trim().toUpperCase(),a=null,src="";
+  if(code&&APT[code]){a=code;src="choisi"}
+  else{
+    var best=null;
+    Object.keys(WX).forEach(function(k){
+      var r=WX[k];if(!r.alt||!r.metar||!APT[k])return;
+      var o=parseMetar(r.metar);if(o.cat!=="VFR"&&o.cat!=="MVFR")return;
+      var d=dist(e.la,e.lo,APT[k][0],APT[k][1]);if(!best||d<best.d)best={k:k,d:d};
+    });
+    if(best){a=best.k;src="proposé"}
+  }
+  if(!a)return null;
+  var P=APT[a],d=dist(e.la,e.lo,P[0],P[1]),tc=bearing(e.la,e.lo,P[0],P[1]),w=windCalc(tc,S.cruise,S.wd,S.ws),ete=d/w.gs;
+  return {code:a,src:src,d:d,tc:tc,ete:ete,fuel:ete*S.burn};
+}
+
+/* Tableau de croisière du manuel : vitesse vraie et débit selon l'altitude, au régime choisi */
+function crParams(){var rpm=2700;if(S.crk&&S.crk!=="custom"){var p=String(S.crk).split("-");if(+p[1])rpm=+p[1]}return rpm}
+function crAt(alt,rpm){
+  var tab=[2000,4000,6000,8000,10000,12000],rows=tab.map(function(a){
+    var best=null;POH_CR.forEach(function(r){if(r[0]===a&&(best===null||Math.abs(r[1]-rpm)<Math.abs(best[1]-rpm)))best=r});return best;
+  }),i;
+  if(alt<=tab[0])return {tas:rows[0][3],burn:rows[0][4],pwr:rows[0][2]};
+  if(alt>=tab[5])return {tas:rows[5][3],burn:rows[5][4],pwr:rows[5][2]};
+  for(i=0;i<tab.length-1;i++)if(alt>=tab[i]&&alt<=tab[i+1])break;
+  var f=(alt-tab[i])/(tab[i+1]-tab[i]),a=rows[i],b=rows[i+1];
+  return {tas:a[3]+(b[3]-a[3])*f,burn:a[4]+(b[4]-a[4])*f,pwr:a[2]+(b[2]-a[2])*f};
+}
+function vfrAlt(a,east){
+  var k=Math.floor(a/1000);
+  return a%1000===500&&((east&&k%2===1)||(!east&&k%2===0));
+}
+function altAdvice(C){
+  if(AIRCRAFT[S.ac].n!==DA20||S.pts.length<2||!WAD||!WAD.byAlt)return null;
+  var rpm=crParams(),D=C.tD,dep=pfInputs("dep"),nof=!!(S.cl&&S.cl.nof),cur=cruiseAlt(),rows=[];
+  var a0=S.pts[0],b0=S.pts[S.pts.length-1],mc=(bearing(a0.la,a0.lo,b0.la,b0.lo)+S.decl+360)%360,east=mc<180;
+  var cand=WA_ALTS.slice();if(cand.indexOf(cur)<0)cand.push(cur);cand.sort(function(x,y){return x-y});
+  cand.forEach(function(a){
+    var lw=WAD.byAlt[a]||(a===WAD.alt?WAD.legs:null);if(!lw)return;
+    var cp=crAt(a,rpm),tt=0;
+    C.legs.forEach(function(L,i){var w=lw[i],r=windCalc(L.tc,cp.tas,w?w.wd:S.wd,w?w.ws:S.ws);tt+=L.d/r.gs});
+    var CT=climbTo(dep.pa,dep.oat,a+(29.92-dep.qnh)*1000,nof);
+    if(CT.ceil)return;
+    var dC=CT.zero?0:CT.d,tC=CT.zero?0:CT.t/60;
+    if(dC>=D*0.9)return;
+    var tCr=tt*(1-dC/D);
+    rows.push({a:a,tas:cp.tas,burn:cp.burn,time:tCr+tC,fuel:tCr*cp.burn,vfr:vfrAlt(a,east),low:a<3000,cur:a===cur});
+  });
+  if(!rows.length)return null;
+  var ok=rows.filter(function(r){return r.vfr||r.low}),best=null;
+  ok.forEach(function(r){if(best===null||r.time<best.time)best=r});
+  var curRow=rows.filter(function(r){return r.cur})[0]||null;
+  return {rows:rows,best:best,cur:curRow,east:east,mc:mc,rpm:rpm};
+}
+function altAdvRender(){
+  var box=$("altAdv"),A=LAST.aa;
+  if(!A){box.innerHTML="<p class=\"note\" style=\"margin-top:0\">"+(AIRCRAFT[S.ac].n!==DA20?"Disponible pour le Diamond DA20-C1 (tableau de croisière du manuel).":(S.pts.length<2?"Ajoute deux points à la route.":"En attente des vents en altitude."))+"</p>";return}
+  var h="<div class=\"leg\"><h3>Route magnétique "+deg(A.mc)+", régime "+A.rpm+" tr/min</h3><div class=\"lg\">";
+  A.rows.forEach(function(r){
+    var tag=(r===A.best?" · le plus rapide":"")+(r.cur?" · actuelle":"");
+    h+=cell(sp(r.a)+" ft"+tag,hm(r.time)+" · "+fr(r.fuel.toFixed(1))+" gal"+(r.vfr||r.low?"":"<br><span style=\"font-size:12px\">hors règle VFR</span>")+"<br><button class=\"btn\" type=\"button\" data-altuse=\""+r.a+"\" style=\"margin-top:4px;font-size:12px;padding:3px 8px\">Utiliser</button>",r===A.best?"ok":"");
+  });
+  h+="</div></div><p class=\"note\">Temps = montée (graphique du manuel) plus croisière (tableau du manuel, température standard) avec les vents du modèle. Le carburant de montée n’est pas dans le manuel : seul le carburant en croisière est compté. Règle des altitudes de croisière VFR (au-dessus de 3 000 ft AGL) : route magnétique "+(A.east?"000° à 179° : milliers impairs plus 500 ft":"180° à 359° : milliers pairs plus 500 ft")+". À vérifier dans le RAC et le CFS.</p>";
+  box.innerHTML=h;
+}
+$("altAdv").addEventListener("click",function(e){
+  var b=e.target.closest("button[data-altuse]");if(!b)return;
+  var a=+b.getAttribute("data-altuse"),cp=crAt(a,crParams());
+  S.wa.alt=String(a);S.cl.alt=String(a);S.cruise=Math.round(cp.tas);S.burn=Math.round(cp.burn*10)/10;S.crk="custom";
+  syncInputs();refresh();
+});
+
+/* Graphique de l'enveloppe de masse et centrage */
+function wbPts(){var a=[],w;for(w=WB.wmin;w<=WB.ramp;w+=25){var l=envLim(w);a.push({w:w,f:l[0],r:l[1]})}return a}
+function wbChart(W){
+  if(!W||W.missing)return "";
+  var pts=wbPts(),x0=1e9,x1=-1e9;
+  pts.forEach(function(p){x0=Math.min(x0,p.f);x1=Math.max(x1,p.r)});
+  W.conds.forEach(function(c){x0=Math.min(x0,c.arm);x1=Math.max(x1,c.arm)});
+  x0=Math.floor((x0-0.3)*2)/2;x1=Math.ceil((x1+0.3)*2)/2;
+  var y0=1100,y1=1850,L=44,R=12,T=10,B=28,WW=320,HH=230;
+  function X(v){return L+(v-x0)/(x1-x0)*(WW-L-R)}
+  function Y(v){return HH-B-(v-y0)/(y1-y0)*(HH-T-B)}
+  var s="<svg viewBox=\"0 0 "+WW+" "+HH+"\" role=\"img\" aria-label=\"Enveloppe de masse et centrage\" style=\"width:100%;max-width:420px;display:block\">";
+  var gx,gy;
+  for(gx=Math.ceil(x0);gx<=x1;gx+=1)s+="<line x1=\""+X(gx)+"\" y1=\""+T+"\" x2=\""+X(gx)+"\" y2=\""+(HH-B)+"\" style=\"stroke:var(--line);stroke-width:1\"/><text x=\""+X(gx)+"\" y=\""+(HH-B+14)+"\" text-anchor=\"middle\" style=\"fill:var(--mute);font:10px sans-serif\">"+gx+"</text>";
+  for(gy=1200;gy<=1800;gy+=200)s+="<line x1=\""+L+"\" y1=\""+Y(gy)+"\" x2=\""+(WW-R)+"\" y2=\""+Y(gy)+"\" style=\"stroke:var(--line);stroke-width:1\"/><text x=\""+(L-4)+"\" y=\""+(Y(gy)+3)+"\" text-anchor=\"end\" style=\"fill:var(--mute);font:10px sans-serif\">"+gy+"</text>";
+  var d="M"+X(pts[0].f)+" "+Y(pts[0].w),i;
+  for(i=1;i<pts.length;i++)d+=" L"+X(pts[i].f)+" "+Y(pts[i].w);
+  for(i=pts.length-1;i>=0;i--)d+=" L"+X(pts[i].r)+" "+Y(pts[i].w);
+  s+="<path d=\""+d+" Z\" style=\"fill:rgba(27,122,58,.12);stroke:var(--ok);stroke-width:1.5\"/>";
+  s+="<polyline points=\""+W.conds.map(function(c){return X(c.arm)+","+Y(c.w)}).join(" ")+"\" style=\"fill:none;stroke:var(--mute);stroke-width:1;stroke-dasharray:3 3\"/>";
+  var nm=["R","D","A"];
+  W.conds.forEach(function(c,k){
+    s+="<circle cx=\""+X(c.arm)+"\" cy=\""+Y(c.w)+"\" r=\"5\" style=\"fill:"+(c.ok?"var(--ok)":"var(--bad)")+";stroke:var(--panel);stroke-width:1.5\"/><text x=\""+(X(c.arm)+(k===2?-16:8))+"\" y=\""+(Y(c.w)+(k===0?-8:(k===1?14:4)))+"\" style=\"fill:var(--ink);font:bold 11px sans-serif\">"+nm[k]+"</text>";
+  });
+  s+="<text x=\""+((L+WW-R)/2)+"\" y=\""+(HH-2)+"\" text-anchor=\"middle\" style=\"fill:var(--mute);font:10px sans-serif\">Centre de gravité (po)</text>";
+  s+="<text x=\"10\" y=\""+((T+HH-B)/2)+"\" text-anchor=\"middle\" transform=\"rotate(-90 10 "+((T+HH-B)/2)+")\" style=\"fill:var(--mute);font:10px sans-serif\">Masse (lb)</text></svg>";
+  return "<div class=\"leg\"><h3>Enveloppe du centre de gravité</h3>"+s+"<p class=\"note\" style=\"margin-top:4px\">R : rampe, D : décollage, A : atterrissage. La zone verte est l’enveloppe du manuel de vol.</p></div>";
+}
+function pdfWbChart(D,W){
+  if(!W||W.missing)return;
+  var pts=wbPts(),x0=1e9,x1=-1e9;
+  pts.forEach(function(p){x0=Math.min(x0,p.f);x1=Math.max(x1,p.r)});
+  W.conds.forEach(function(c){x0=Math.min(x0,c.arm);x1=Math.max(x1,c.arm)});
+  x0=Math.floor((x0-0.3)*2)/2;x1=Math.ceil((x1+0.3)*2)/2;
+  var y0=1100,y1=1850,cw=300,ch=170,ox=D.M+34,top;
+  D.ensure(ch+40);D.gap(ch+14);top=D.y();
+  function X(v){return ox+(v-x0)/(x1-x0)*cw}
+  function Y(v){return top+(v-y0)/(y1-y0)*ch}
+  var gx,gy;
+  for(gx=Math.ceil(x0);gx<=x1;gx+=1){D.line(X(gx),Y(y0),X(gx),Y(y1),0.3,"0.8");D.text(X(gx)-4,Y(y0)-10,String(gx),7.5,false,false,"mute")}
+  for(gy=1200;gy<=1800;gy+=200){D.line(X(x0),Y(gy),X(x1),Y(gy),0.3,"0.8");D.text(ox-26,Y(gy)-2.5,String(gy),7.5,false,false,"mute")}
+  var i;
+  for(i=0;i<pts.length-1;i++){D.lineC(X(pts[i].f),Y(pts[i].w),X(pts[i+1].f),Y(pts[i+1].w),1.2,"0.10 0.45 0.20");D.lineC(X(pts[i].r),Y(pts[i].w),X(pts[i+1].r),Y(pts[i+1].w),1.2,"0.10 0.45 0.20")}
+  D.lineC(X(pts[0].f),Y(pts[0].w),X(pts[0].r),Y(pts[0].w),1.2,"0.10 0.45 0.20");
+  D.lineC(X(pts[pts.length-1].f),Y(pts[pts.length-1].w),X(pts[pts.length-1].r),Y(pts[pts.length-1].w),1.2,"0.10 0.45 0.20");
+  var nm=["R","D","A"];
+  for(i=0;i<W.conds.length-1;i++)D.line(X(W.conds[i].arm),Y(W.conds[i].w),X(W.conds[i+1].arm),Y(W.conds[i+1].w),0.6,"0.5");
+  W.conds.forEach(function(c,k){
+    D.rectC(X(c.arm)-3,Y(c.w)-3,6,6,c.ok?"0.10 0.45 0.20":"0.70 0.10 0.10");
+    D.text(X(c.arm)+5,Y(c.w)-3,nm[k],8,true,false);
+  });
+  D.text(ox+cw/2-40,top-22,"Centre de gravité (po)",7.5,false,false,"mute");
+  D.text(D.M,top+ch+4,"Masse (lb). R : rampe, D : décollage, A : atterrissage. Zone : enveloppe du manuel de vol.",7.5,false,false,"mute");
+  D.gap(14);
+}
+
+/* Itinéraire de vol VFR : aide-mémoire à recopier dans le formulaire de dépôt */
+function icaoCoord(la,lo){
+  var a=Math.abs(la),o=Math.abs(lo),ad=Math.floor(a),am=Math.round((a-ad)*60),od=Math.floor(o),om=Math.round((o-od)*60);
+  if(am===60){ad++;am=0}if(om===60){od++;om=0}
+  return ("0"+ad).slice(-2)+("0"+am).slice(-2)+(la>=0?"N":"S")+("00"+od).slice(-3)+("0"+om).slice(-2)+(lo>=0?"E":"W");
+}
+function hhmmStr(h){var m=Math.round(h*60);return ("0"+Math.floor(m/60)).slice(-2)+("0"+(m%60)).slice(-2)}
+function fpRows(){
+  var C=compute(),f=S.fp||{},rows=[];
+  if(S.pts.length<2)return rows;
+  var d=depMin(),utc="--",loc="--";
+  if(d!==null&&S.date){var ld=localDate(S.date,d);if(ld&&!isNaN(ld.getTime())){utc=ld.getUTCFullYear()+"-"+("0"+(ld.getUTCMonth()+1)).slice(-2)+"-"+("0"+ld.getUTCDate()).slice(-2)+" "+("0"+ld.getUTCHours()).slice(-2)+("0"+ld.getUTCMinutes()).slice(-2)+" UTC";loc=clock(d)+" heure locale"}}
+  var alt=cruiseAlt(),b=S.wb||{},crew=num(b.pil,0)>0?1:0,pax=num(b.pax,0)>0?1:0;
+  var pob=(f.pob!==undefined&&f.pob!=="")?f.pob:(crew+pax>0?String(crew+pax):"--");
+  var route=S.pts.map(function(p){var k=(p.n||"").toUpperCase();return APT[k]?k:icaoCoord(p.la,p.lo)}).join(" DCT "),AI=C.alt;
+  rows.push(["Immatriculation",f.reg||"--"],["Règles de vol","VFR"],["Type d’aéronef",AIRCRAFT[S.ac].n],
+   ["Pilote",(f.pilot||"--")+(f.phone?" · "+f.phone:"")],["Personnes à bord",pob],
+   ["Départ",(S.pts[0].n||"")+" · "+utc+(loc!=="--"?" ("+loc+")":"")],
+   ["Vitesse et niveau","N"+("000"+Math.round(S.cruise)).slice(-4)+" · A"+("000"+Math.round(alt/100)).slice(-3)+" ("+sp(Math.round(alt))+" ft)"],
+   ["Route",route],["Destination",S.pts[S.pts.length-1].n||""],
+   ["Durée totale estimée",hhmmStr(C.tT)+" ("+hm(C.tT)+")"],
+   ["Dégagement",AI?AI.code:"NIL"],
+   ["Autonomie",hhmmStr(S.fuel/S.burn)+" ("+hm(S.fuel/S.burn)+")"],
+   ["Radio de secours, ELT",f.elt||"--"],["Équipement de survie",f.surv||"--"],["Couleur de l’aéronef",f.color||"--"],["Remarques",f.rem||"--"]);
+  return rows;
+}
+function fpText(){
+  var r=fpRows();if(!r.length)return "";
+  return ["ITINÉRAIRE DE VOL VFR (aide-mémoire : vérifie chaque champ avant le dépôt)"].concat(r.map(function(x){return x[0]+" : "+x[1]})).concat(["Rappel : ferme ton plan de vol ou ton itinéraire à l’arrivée."]).join("\n");
+}
+$("fpCopy").onclick=function(){
+  var txt=fpText(),m=$("fpMsg"),o=$("fpOut");
+  if(!txt){m.textContent="Ajoute au moins deux points à la route.";m.hidden=false;return}
+  function manual(){o.hidden=false;o.focus();o.select();m.textContent="Copie automatique impossible. Le texte est sélectionné : copie-le à la main.";m.hidden=false}
+  try{if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(txt).then(function(){m.textContent="Itinéraire copié.";m.hidden=false},manual);else manual()}catch(e){manual()}
+};
+["reg","pilot","phone","pob","color","elt","surv","rem"].forEach(function(k){
+  $("fp_"+k).addEventListener("input",function(){if(!S.fp)S.fp={};S.fp[k]=$("fp_"+k).value;refresh()});
+});
+
+/* Mémoire des avions et des personnes (sur cet appareil) */
+function memRender(){
+  var h="",i;
+  (S.acs||[]).forEach(function(a,i){h+="<span class=\"chip\"><b>"+esc(a.reg)+"</b> "+sp(Math.round(a.ew))+" lb <button type=\"button\" class=\"btn\" data-acl=\""+i+"\">Charger</button><button type=\"button\" class=\"btn\" data-acd=\""+i+"\" aria-label=\"Supprimer\">×</button></span>"});
+  $("m_acs").innerHTML=h||"<span class=\"note\">Aucun avion enregistré.</span>";
+  h="";
+  (S.ppl||[]).forEach(function(p,i){h+="<span class=\"chip\"><b>"+esc(p.n)+"</b> "+Math.round(p.w)+" lb <button type=\"button\" class=\"btn\" data-ppl=\"p"+i+"\">Pilote</button><button type=\"button\" class=\"btn\" data-ppl=\"x"+i+"\">Passager</button><button type=\"button\" class=\"btn\" data-ppd=\""+i+"\" aria-label=\"Supprimer\">×</button></span>"});
+  $("m_ppl").innerHTML=h||"<span class=\"note\">Aucune personne enregistrée.</span>";
+}
+$("m_acadd").onclick=function(){
+  var reg=$("m_reg").value.trim().toUpperCase(),ew=num(S.wb&&S.wb.ew,null),em=num(S.wb&&S.wb.em,null);
+  if(!reg||ew===null||em===null){$("m_msg").textContent="Entre l’immatriculation, la masse à vide et le moment à vide ci-dessous.";$("m_msg").hidden=false;return}
+  if(!S.acs)S.acs=[];
+  var f=S.acs.filter(function(a){return a.reg===reg})[0];
+  if(f){f.ew=ew;f.em=em}else S.acs.push({reg:reg,ew:ew,em:em});
+  if(!S.fp)S.fp={};S.fp.reg=reg;syncFeat();$("m_msg").textContent="Avion "+reg+" enregistré.";$("m_msg").hidden=false;refresh();
+};
+$("m_padd").onclick=function(){
+  var n=$("m_pn").value.trim(),w=parseFloat($("m_pw").value);
+  if(!n||isNaN(w)||w<=0){$("m_msg").textContent="Entre un nom et un poids en lb.";$("m_msg").hidden=false;return}
+  if(!S.ppl)S.ppl=[];
+  var f=S.ppl.filter(function(p){return p.n===n})[0];
+  if(f)f.w=w;else S.ppl.push({n:n,w:w});
+  $("m_pn").value="";$("m_pw").value="";memRender();$("m_msg").textContent=n+" enregistré.";$("m_msg").hidden=false;save();
+};
+$("m_acs").addEventListener("click",function(e){
+  var l=e.target.closest("button[data-acl]"),d=e.target.closest("button[data-acd]");
+  if(l){var a=S.acs[+l.getAttribute("data-acl")];if(a){S.wb.ew=String(a.ew);S.wb.em=String(a.em);if(!S.fp)S.fp={};S.fp.reg=a.reg;$("m_reg").value=a.reg;syncPf();refresh()}}
+  if(d){S.acs.splice(+d.getAttribute("data-acd"),1);memRender();save()}
+});
+$("m_ppl").addEventListener("click",function(e){
+  var u=e.target.closest("button[data-ppl]"),d=e.target.closest("button[data-ppd]");
+  if(u){var v=u.getAttribute("data-ppl"),p=S.ppl[+v.slice(1)];if(p){S.wb[v[0]==="p"?"pil":"pax"]=String(p.w);syncPf();refresh()}}
+  if(d){S.ppl.splice(+d.getAttribute("data-ppd"),1);memRender();save()}
+});
+
+/* Champs de réglage et affichage */
+function syncFeat(){
+  if(!S.pm)S.pm={};if(!S.fp)S.fp={};
+  ["ceil","vis","xw","gust"].forEach(function(k){$("pm_"+k).value=S.pm[k]===undefined?"":S.pm[k]});
+  $("altn").value=S.altn||"";$("altOn").checked=S.altOn!==false;
+  ["reg","pilot","phone","pob","color","elt","surv","rem"].forEach(function(k){$("fp_"+k).value=S.fp[k]===undefined?"":S.fp[k]});
+  memRender();
+}
+["ceil","vis","xw","gust"].forEach(function(k){
+  $("pm_"+k).addEventListener("input",function(){if(!S.pm)S.pm={};S.pm[k]=$("pm_"+k).value;refresh()});
+});
+$("altn").addEventListener("input",function(){S.altn=$("altn").value.trim().toUpperCase();refresh();scheduleAuto()});
+$("altOn").addEventListener("change",function(){S.altOn=$("altOn").checked;refresh()});
+function featRender(C){
+  /* soleil */
+  var SI=sunInfo(C),sn="";
+  if(SI){
+    var A=SI.dep,B=SI.arr,a=S.pts[0],b=S.pts[S.pts.length-1];
+    sn="Soleil à "+a.n+" : lever "+clock(A.rise)+", coucher "+clock(A.set)+", fin du crépuscule civil "+clock(A.ce)+". À "+b.n+" : coucher "+clock(B.set)+", fin du crépuscule civil "+clock(B.ce)+" (heure de ton appareil).";
+    if(SI.latest!==null)sn+=" Pour arriver avant la fin du crépuscule civil, départ au plus tard à "+clock(SI.latest)+" (temps de vol de "+hm(C.tT)+").";
+  }
+  $("sunNote").textContent=sn;
+  /* dégagement */
+  var AI=C.alt,an="";
+  if(AI)an="Dégagement "+(AI.src==="choisi"?"choisi":"proposé")+" : "+AI.code+" "+APT[AI.code][2]+", "+Math.round(AI.d)+" NM de l’arrivée, "+hm(AI.ete)+", "+AI.fuel.toFixed(1)+" gal"+(S.altOn!==false?" ajoutés au carburant requis.":", non comptés dans le carburant requis.");
+  else if((S.altn||"").trim()&&!APT[(S.altn||"").trim().toUpperCase()])an="Code inconnu : choisis un aéroport de la liste (par exemple CYUL).";
+  else an="Aucun dégagement proposé pour le moment : la météo doit d’abord se charger, ou entre un code ci-dessus.";
+  $("altNote").textContent=an;
+  altAdvRender();
+  /* itinéraire */
+  var t=fpText();$("fpOut").value=t;
+}
+
 function fmtMin(m){return m==null?"--":clock(m)}
 function updateResUi(C){
   var RI=C.RI,msg="",nn="";
@@ -2751,10 +3123,10 @@ function refresh(){
   else if(tsig!==lastTimeSig){lastTimeSig=tsig;scheduleWa()}
   var C=compute();
   updateResUi(C);
-  renderSummary(C);renderLegs(C);renderLegWinds(C);drawRoute(C);pfRender(C);clRender(C);buildVerdict(C);buildPrint(C);save();
+  renderSummary(C);renderLegs(C);renderLegWinds(C);drawRoute(C);pfRender(C);clRender(C);buildVerdict(C);featRender(C);buildPrint(C);save();
   var wsig=S.date+"|"+S.dep+"|"+Math.round(C.tT*60);
   if(WXLIST&&wsig!==lastWsig){lastWsig=wsig;renderWx(WXLIST)}
-  var sg=wxStations().join(",")+"|"+pfCode("dep")+"|"+pfCode("arr");
+  var sg=wxStations().join(",")+"|"+pfCode("dep")+"|"+pfCode("arr")+"|"+(S.altn||"");
   if(sg!==lastSig){lastSig=sg;scheduleAuto()}
 }
 loadSaved();
@@ -2763,6 +3135,8 @@ if(!S.wb)S.wb={};
 if(!S.pf)S.pf={dep:{},arr:{},margin:25};
 if(!S.cl)S.cl={};
 if(!S.wa)S.wa={};
+if(!S.pm)S.pm={};
+if(!S.fp)S.fp={};
 buildPfUi();
 syncInputs();renderPoints();refresh();drawApts();drawGrid();
 showStep(1);
