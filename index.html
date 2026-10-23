@@ -714,6 +714,13 @@ input:focus-visible,button:focus-visible,summary:focus-visible{outline:2px solid
 #map.adding{cursor:crosshair}
 .note{font-size:13px;color:var(--mute);margin:8px 0 0}
 .note.bad{color:var(--bad)}
+.vdbar{display:block;width:100%;text-align:left;margin:8px 0 0;padding:9px 12px;border-radius:8px;border:1px solid var(--line);background:var(--panel);color:var(--ink);font:600 14px/1.3 inherit;cursor:pointer}
+.vdbar.ok{border-color:var(--ok)}.vdbar.warn{border-color:var(--amber)}.vdbar.bad{border-color:var(--bad)}
+.vdh{font-weight:700;font-size:16px;padding:8px 12px;border-radius:8px;margin-bottom:6px}
+.vdh.ok{background:rgba(27,122,58,.14);color:var(--ok)}.vdh.warn{background:rgba(168,93,0,.16);color:var(--amber)}.vdh.bad{background:rgba(179,38,30,.14);color:var(--bad)}
+.vdi{display:flex;gap:10px;align-items:flex-start;padding:7px 0;border-top:1px solid var(--line);font-size:14px;line-height:1.35}
+.vdd{flex:0 0 10px;height:10px;border-radius:50%;margin-top:5px;background:var(--mute)}
+.vdd.ok{background:var(--ok)}.vdd.warn{background:var(--amber)}.vdd.bad{background:var(--bad)}.vdd.info{background:var(--cyan)}
 .pin{width:28px;height:28px;border-radius:50%;background:var(--amber);color:var(--pinink);border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;font:700 13px "B612 Mono",monospace}
 .legl{display:inline-block;transform:translate(-50%,-50%);white-space:nowrap;background:var(--legbg);color:var(--ink);border:1px solid var(--line);border-radius:6px;padding:1px 6px;font:700 11px "B612 Mono",monospace;pointer-events:none}
 .gl{white-space:nowrap;color:#5b6b78;font:11px "B612 Mono",monospace;pointer-events:none;text-shadow:0 0 3px #fff}
@@ -783,6 +790,7 @@ pre.code{font:11px "B612 Mono",monospace;background:var(--panel);border:1px soli
     <button type="button" data-s="4"><b>4</b>Charge</button>
     <button type="button" data-s="5"><b>5</b>Résultat</button>
   </nav>
+  <button type="button" class="vdbar" id="vdBar" hidden></button>
 
   <section class="card step" data-step="1">
     <h2>Avion et carburant</h2>
@@ -865,9 +873,12 @@ pre.code{font:11px "B612 Mono",monospace;background:var(--panel);border:1px soli
     <div class="list" id="lw"></div>
 
     <h2 style="margin-top:18px">Météo des aéroports (METAR et TAF)</h2>
-    <p class="note" style="margin-top:0">Source : NAV CANADA. Les stations sont les aéroports de ta route, et l’aéroport le plus proche (à 60 NM ou moins) pour les points hors aéroports.</p>
+    <p class="note" style="margin-top:0">La météo se charge toute seule dès que la route change. Source : NAV CANADA. Les stations sont les aéroports de ta route, et l’aéroport le plus proche (à 60 NM ou moins) pour les points hors aéroports. Jusqu’à 4 aéroports près de l’arrivée sont aussi vérifiés comme dégagements possibles.</p>
+    <label class="chk" style="margin-top:8px"><input type="checkbox" id="autoOn"> Remplir automatiquement les calculs avec la météo (température, calage, vent, piste)</label>
+    <p class="note" id="autoMsg"></p>
     <div class="tools" style="margin-top:8px">
-      <button class="btn on" id="wxGo" type="button">Récupérer la météo</button>
+      <button class="btn on" id="wxGo" type="button">Actualiser la météo</button>
+      <button class="btn" id="autoReset" type="button">Tout remettre en automatique</button>
     </div>
     <label for="wxExtra">Autres stations (codes séparés par des espaces)</label>
     <input id="wxExtra" type="text" placeholder="CYMX CYSC" autocapitalize="characters" autocomplete="off" autocorrect="off" spellcheck="false">
@@ -936,6 +947,10 @@ pre.code{font:11px "B612 Mono",monospace;background:var(--panel);border:1px soli
 
   <div class="step" data-step="5" hidden>
     <section class="card">
+      <h2>Verdict de préparation</h2>
+      <div id="vd"></div>
+    </section>
+    <section class="card" style="margin-top:16px">
       <h2>Résumé du vol</h2>
       <p class="note" id="exNote" hidden>Route d’exemple. Va à l’étape Route pour la remplacer par la tienne.</p>
       <div id="sum" class="sum"></div>
@@ -1110,6 +1125,7 @@ function syncInputs(){
   $("wxExtra").value=S.wxExtra||"";
   $("wxProxy").value=S.wxProxy||"";$("wxKey").value=S.wxKey||"";
   syncPf();
+  $("autoOn").checked=S.auto!==false;
   $("resAuto").checked=S.resAuto!==false;
   $("res").disabled=S.resAuto!==false;
   var isDA=AIRCRAFT[S.ac].n===DA20;
@@ -1130,6 +1146,7 @@ AIRCRAFT.forEach(function(a,i){
     if((k==="cruise"||k==="burn")&&v<=0)return;
     if(k==="ws"&&v<0)return;
     S[k]=v;
+    if(k==="wd"||k==="ws"){S.windMan=true;S.windAuto=""}
     if(k==="cruise"||k==="burn"){S.crk="custom";$("cruiseSel").value="custom"}
     refresh();
   });
@@ -1310,6 +1327,7 @@ function planText(){
   L.push("Roulage et montée "+S.taxi.toFixed(1)+" gal, réserve "+C.resMin+" min ("+C.res.toFixed(1)+" gal)");
   L.push("Requis "+C.req.toFixed(1)+" gal, à bord "+S.fuel.toFixed(1)+" gal, marge "+C.margin.toFixed(1)+" gal");
   perfText().forEach(function(x){L.push(x)});
+  vdText().forEach(function(x){L.push(x)});
   return L.join("\n");
 }
 $("copy").onclick=function(){
@@ -1333,6 +1351,8 @@ function buildPrint(C){
   });
   h+="<tr class=\"tot\"><td></td><td>Total</td><td></td><td></td><td>"+C.tD.toFixed(0)+"</td><td></td><td></td><td>"+hm(C.tT)+"</td><td>"+C.trip.toFixed(1)+"</td><td>"+(C.eta==null?"--":clock(C.eta))+"</td></tr></table>";
   h+="<table><tr><th>Carburant du trajet</th><th>Roulage et montée</th><th>Réserve ("+C.resMin+" min)</th><th>Requis</th><th>À bord</th><th>Marge</th></tr><tr><td>"+C.trip.toFixed(1)+" gal</td><td>"+S.taxi.toFixed(1)+" gal</td><td>"+C.res.toFixed(1)+" gal</td><td>"+C.req.toFixed(1)+" gal</td><td>"+S.fuel.toFixed(1)+" gal</td><td>"+(C.margin>=0?"+":"")+C.margin.toFixed(1)+" gal</td></tr></table>";
+  var vt0=LAST.vd;
+  if(vt0){h+="<p><b>Verdict de préparation : "+esc(vt0.head)+"</b></p>";vt0.items.forEach(function(x){h+="<p>"+(x.l==="bad"?"[PROBLÈME] ":(x.l==="warn"?"[À VÉRIFIER] ":""))+esc(x.t)+"</p>"})}
   var pt=perfText();
   if(pt.length){h+="<p><b>Masse et performances (manuel de vol du DA20-C1) :</b></p>";pt.forEach(function(x){h+="<p>"+esc(x)+"</p>"})}
   h+="<p>Météo, NOTAM, altimètre :</p><div class=\"ln\"></div><div class=\"ln\"></div><div class=\"ln\"></div>";
@@ -1527,23 +1547,13 @@ async function wxOne(code){
   res.metar=m?m.text.replace(/=$/,""):null;res.taf=tf?tf.text.replace(/=$/,""):null;res.via=(a&&a.via)||(b&&b.via);
   return res;
 }
-async function loadWx(){
-  var st=wxStations(),box=$("wx"),stn=$("wxSt");
-  if(!st.length){stn.textContent="Ajoute un aéroport à la route ou une station ci-dessus.";return}
-  stn.textContent="Chargement de "+st.join(", ")+"…";box.innerHTML="";
-  var out=await Promise.all(st.map(wxOne));
-  WX={};out.forEach(function(r){WX[r.code]=r});WXTIME=new Date();
-  var fails=out.filter(function(r){return r.fail}).length;
-  stn.textContent=(fails===out.length?"Aucune réponse. Dans l’aperçu de claude.ai, les requêtes externes sont bloquées : ouvre la version hébergée. Sinon, vérifie ta connexion ou ouvre « Si la météo ne s’affiche pas ».":"Stations : "+st.join(", ")+". Mis à jour à "+new Date().toLocaleTimeString("fr-CA",{hour:"2-digit",minute:"2-digit"})+".");
-  renderWx(out);
-}
 function renderWx(list){
-  var h="";
+  var h="",C0=compute(),ft0=flightTimes(C0);
   list.forEach(function(r){
     var a=APT[r.code],name=a?a[2]:"";
     if(r.fail){h+="<div class=\"leg\"><div class=\"wxh\"><h3>"+esc(r.code)+" "+esc(name)+"</h3></div><p class=\"note\" style=\"margin:0\">Pas de réponse pour cette station.</p></div>";return}
     var o=r.metar?parseMetar(r.metar):null;
-    h+="<div class=\"leg\"><div class=\"wxh\"><h3>"+esc(r.code)+" "+esc(name)+"</h3>"+(o?"<span class=\"cat "+o.cat+"\">"+(o.cat==="NA"?"?":o.cat)+"</span>":"")+"</div>";
+    h+="<div class=\"leg\"><div class=\"wxh\"><h3>"+esc(r.code)+" "+esc(name)+(r.alt?" · dégagement possible":"")+"</h3>"+(o?"<span class=\"cat "+o.cat+"\">"+(o.cat==="NA"?"?":o.cat)+"</span>":"")+"</div>";
     if(!o){h+="<p class=\"note\" style=\"margin:0\">Aucun METAR pour cette station (beaucoup de petits aérodromes n’en ont pas).</p>"}
     else{
       var w=o.wspd===undefined?"--":(o.wspd===0?"Calme":((o.vrb?"Variable":deg(o.wdir)+" "+o.wspd+" kt")+(o.vrb?", "+o.wspd+" kt":"")+(o.gust?", rafales "+o.gust+" kt":"")+(o.v1!==undefined?" (varie de "+deg(o.v1)+" à "+deg(o.v2)+")":"")));
@@ -1562,9 +1572,12 @@ function renderWx(list){
       if(o.age>70)warn.push("Rapport de plus de 70 minutes : vérifie qu’un METAR plus récent n’existe pas.");
       if(warn.length)h+="<p class=\"note bad\">"+esc(warn.join(" "))+"</p>";
       h+="<div class=\"raw\">"+esc(r.metar)+"</div>";
+      if(r.stale)h+="<p class=\"note bad\">Données enregistrées à "+hhmm(r.t)+" (pas de réponse du serveur ou hors ligne).</p>";
       if(o.wspd!==undefined&&!o.vrb&&o.wdir!==null&&o.wspd>0)h+="<div class=\"tools\" style=\"margin:8px 0 0\"><button class=\"btn\" type=\"button\" data-wxuse=\""+esc(r.code)+"\">Utiliser ce vent pour la route</button></div>";
     }
     if(r.taf){
+      var fc0=fcEval(r.code,C0,ft0);
+      if(fc0)h+="<p class=\"note"+(fc0.lvl==="bad"?" bad":"")+"\" style=\"font-weight:700\">"+esc(fc0.txt)+"</p>";
       var tf=esc(r.taf).replace(/\s(BECMG|TEMPO|FM\d{6}|PROB\d{2}|RMK)\b/g,"\n$1");
       h+="<details style=\"margin-top:8px\"><summary class=\"wxt\">Prévision (TAF)</summary><div class=\"raw\">"+tf+"</div></details>";
     }else h+="<p class=\"wxt\" style=\"margin:8px 0 0\">Pas de TAF pour cette station.</p>";
@@ -1576,9 +1589,8 @@ $("wx").addEventListener("click",function(e){
   var b=e.target.closest("button[data-wxuse]");if(!b)return;
   var r=WX[b.getAttribute("data-wxuse")];if(!r||!r.metar)return;
   var o=parseMetar(r.metar);
-  if(o.wdir!==null&&o.wspd!==undefined){S.wd=o.wdir;S.ws=o.gust?Math.max(o.wspd,Math.round((o.wspd+o.gust)/2)):o.wspd;syncInputs();refresh();$("wxSt").textContent="Vent de surface de "+r.code+" appliqué à la route ("+deg(S.wd)+" "+S.ws+" kt). Le vent en altitude peut être très différent : consulte les prévisions de vents en altitude avant le vol."}
+  if(o.wdir!==null&&o.wspd!==undefined){S.wd=o.wdir;S.ws=o.gust?Math.max(o.wspd,Math.round((o.wspd+o.gust)/2)):o.wspd;S.windMan=true;syncInputs();refresh();$("wxSt").textContent="Vent de surface de "+r.code+" appliqué à la route ("+deg(S.wd)+" "+S.ws+" kt). Le vent en altitude peut être très différent : consulte les prévisions de vents en altitude avant le vol."}
 });
-$("wxGo").onclick=loadWx;
 $("wxExtra").addEventListener("input",function(){S.wxExtra=$("wxExtra").value;save()});
 $("wxProxy").addEventListener("input",function(){S.wxProxy=$("wxProxy").value;wxRoute=0;save()});
 $("wxKey").addEventListener("input",function(){S.wxKey=$("wxKey").value.trim();save()});
@@ -1714,7 +1726,11 @@ function buildPfUi(){
   $("pfIn").innerHTML=h;
   ["dep","arr"].forEach(function(w){
     PF_FIELDS.forEach(function(f){
-      $("pf_"+w+"_"+f[0]).addEventListener("input",function(){S.pf[w][f[0]]=$("pf_"+w+"_"+f[0]).value;refresh()});
+      (function(w,k){var el=$("pf_"+w+"_"+k);el.addEventListener("input",function(){
+        var p=S.pf[w];p[k]=el.value;p.man=p.man||{};
+        if(el.value==="")delete p.man[k];else p.man[k]=1;
+        if(k==="rwy"){p.rwyTxt="";if(!p.man.len){var Ln=rwyLen(pfCode(w),p.rwy);if(Ln!==null){p.len=String(Ln);$("pf_"+w+"_len").value=p.len}}}
+        refresh()})})(w,f[0]);
     });
   });
   $("pfIn").addEventListener("click",function(e){var b=e.target.closest("button[data-pfm]");if(b)pfMetar(b.getAttribute("data-pfm"))});
@@ -1745,17 +1761,12 @@ async function pfMetar(which){
   m.hidden=false;
   if(!code){m.textContent="Ce point de la route n’est pas un aéroport connu : saisis les valeurs à la main.";return}
   m.textContent="Chargement du METAR de "+code+"…";
-  var r=await wxOne(code);
+  var r=await wxFetch(code,true);
   if(r.fail||!r.metar){m.textContent="Pas de METAR pour "+code+" (ou pas de réponse). Saisis les valeurs à la main.";return}
-  var o=parseMetar(r.metar),p=S.pf[which];
-  if(o.temp!==undefined)p.oat=String(o.temp);
-  if(o.inhg)p.qnh=o.inhg.toFixed(2);else if(o.hpa)p.qnh=(o.hpa/33.8639).toFixed(2);
-  if(o.wspd!==undefined){
-    p.ws=String(o.wspd);
-    if(!o.vrb&&o.wdir!==null&&o.wspd>0)p.wd=String((Math.round(o.wdir+S.decl)%360+360)%360||360);else p.wd="";
-  }
+  WX[code]=r;
+  var msg=applyOne(which,true);
   syncPf();refresh();
-  m.textContent="METAR de "+code+" appliqué. Le vent du METAR est vrai : il est converti en magnétique avec la déclinaison de "+S.decl+"° O."+(o.gust?" Rafales à "+o.gust+" kt, non incluses.":"")+(o.vrb?" Vent variable : saisis la direction à la main pour la piste.":"");
+  m.textContent=msg+" Le vent du METAR est vrai : il est converti en magnétique avec la déclinaison de "+S.decl+"° O.";
 }
 function pfInputs(which){
   var p=S.pf[which]||{},code=pfCode(which),fl=[];
@@ -1768,7 +1779,8 @@ function pfInputs(which){
   if(wd!==null&&rh!==null&&ws>0){var a=rad(wd-rh);hw=ws*Math.cos(a);xw=ws*Math.sin(a)}
   else if(ws>0)fl.push("Vent non pris en compte : saisis la direction du vent et le numéro de piste.");
   var hwe=(hw>0&&S.pf.hw50!==false)?hw*0.5:hw;
-  return {code:code,el:el,src:src,qnh:qnh,oat:oat,pa:pa,hw:hw,hwe:hwe,xw:xw,rh:rh,len:gv(p,"len",null),fl:fl,ws:ws};
+  var rt=(p.man&&p.man.rwy)?String(p.rwy):(p.rwyTxt||((p.rwy!==undefined&&p.rwy!=="")?String(p.rwy):""));
+  return {rt:rt,code:code,el:el,src:src,qnh:qnh,oat:oat,pa:pa,hw:hw,hwe:hwe,xw:xw,rh:rh,len:gv(p,"len",null),fl:fl,ws:ws};
 }
 function pfRender(C){
   var isDA=AIRCRAFT[S.ac].n===DA20;
@@ -1785,6 +1797,7 @@ function pfRender(C){
     $("pf_"+w+"_t").textContent=tt;
     var el=$("pf_"+w+"_elev");el.placeholder=I.code&&ELEV[I.code]!==undefined?String(ELEV[I.code]):"";
     h+="<div class=\"leg\"><h3>"+esc(tt)+"</h3><div class=\"lg\">"
+     +(I.rh!==null?cell("Piste",esc(I.rt)+(I.len!==null?" · "+sp(Math.round(I.len))+" ft":"")):"")
      +cell("Altitude-pression",sp(Math.round(I.pa))+" ft")
      +cell("Vent de face",(I.hw>=0?"":"Arr. ")+Math.round(Math.abs(I.hw))+" kt",I.hw<0?"bad":"")
      +cell("Vent traversier",Math.round(Math.abs(I.xw))+" kt",Math.abs(I.xw)>20?"bad":"")
@@ -2057,6 +2070,12 @@ function buildPdf(){
   D.para("Plan de vol",{size:20,bold:true,after:2});
   D.para(AIRCRAFT[S.ac].n+" · vitesse vraie "+S.cruise+" kt · "+fr(S.burn)+" gal US/h · préparé le "+date,{size:10,col:"mute",after:6});
   if(S.pts.length<2){D.para("Aucune route : ajoute au moins deux points à l’étape Route.",{size:11});return D.build("Plan Vol")}
+  var vt=LAST.vd;
+  if(vt){
+    D.h2("Verdict de préparation");
+    D.para(vt.head,{size:11,bold:true,col:vt.lvl===2?"bad":(vt.lvl===1?"mute":"ok")});
+    vt.items.forEach(function(x){D.para((x.l==="bad"?"PROBLÈME — ":(x.l==="warn"?"À VÉRIFIER — ":""))+x.t,{size:9,col:x.l==="bad"?"bad":(x.l==="ok"?"ok":undefined)})});
+  }
   D.h2("Route et conditions");
   D.para("Route : "+S.pts.map(function(p){return p.n}).join(" > "),{size:10,bold:true});
   D.para("Date : "+(S.date||"--")+(S.dep?" · Départ : "+S.dep+" (heure locale)":"")+" · Vent général : "+deg(S.wd)+" / "+S.ws+" kt · Déclinaison : "+S.decl+"° O",{size:9.5});
@@ -2076,7 +2095,7 @@ function buildPdf(){
     codes.forEach(function(k){
       var r=WX[k],a=APT[k],o=r.metar?parseMetar(r.metar):null;
       D.ensure(40);
-      D.para(k+(a?" "+a[2]:"")+(o?"  —  "+(o.cat==="NA"?"catégorie inconnue":o.cat):""),{size:10,bold:true,after:1});
+      D.para(k+(a?" "+a[2]:"")+(r.alt?" (dégagement possible)":"")+(o?"  —  "+(o.cat==="NA"?"catégorie inconnue":o.cat):""),{size:10,bold:true,after:1});
       if(r.fail)D.para("Pas de réponse pour cette station.",{size:9,col:"bad"});
       else{
         D.para(r.metar||"Aucun METAR pour cette station.",{size:8,mono:true,after:2});
@@ -2206,6 +2225,368 @@ $("oaipGo").onclick=setOaip;
 try{var sk=localStorage.getItem(OAIP);if(sk){$("oaipKey").value=sk;setOaip()}}catch(e){}
 
 /* ---------- Mise à jour ---------- */
+/* ---------- Préparation automatique : météo, pistes, TAF à l'heure du vol, verdict ---------- */
+var RWY={"CAJ4":[["13","31",3930,"ASP"]],"CAZ5":[["15","33",3280,"ASP"]],"CBBC":[["13","31",3700,"ASP"]],"CNC3":[["15","33",3500,"COP"],["08","26",2500,"Aspha"]],"CYAC":[["11","29",3900,"GRVL"]],"CYAG":[["12","30",4500,"ASP"],["03","21",2600,"ASP"]],"CYAH":[["09","27",5000,"GRAVE"]],"CYAL":[["09","27",2900,"ASPHA"]],"CYAM":[["04","22",6000,"ASP"],["12","30",6000,"ASP"]],"CYAQ":[["03","21",3500,"GRVL"]],"CYAS":[["03","21",3521,"UNK"]],"CYAT":[["06","24",3500,"GRVL"]],"CYAV":[["13","31",3000,"ASP"],["18","36",3000,"ASP"],["04","22",2850,"ASP"]],"CYAX":[["18","36",3600,"ASP"]],"CYAY":[["10","28",4000,"ASP"]],"CYAZ":[["16","34",5000,"CON"],["07","25",4999,"CON"],["11","29",4997,"CON"]],"CYBB":[["05","23",5000,"GVL"]],"CYBC":[["10","28",6000,"ASP"]],"CYBD":[["05","23",4200,"ASP"]],"CYBE":[["06","24",3935,"Aspha"]],"CYBF":[["08","26",4434,"ASP"]],"CYBG":[["11","29",10000,"CON"],["18","36",6000,"ASP"]],"CYBL":[["12","30",6499,"ASP"]],"CYBQ":[["07","25",3201,"Grave"]],"CYBR":[["08","26",6500,"ASP"],["14","32",3000,"GVL"]],"CYBT":[["03","21",3500,"CRUSH"]],"CYBU":[["03","21",2930,"ASPHA"],["12","30",2900,"TURF/"]],"CYBV":[["09","27",2900,"CRUSH"]],"CYBW":[["17","35",5000,"ASP"],["08","26",3423,"ASP"]],"CYBX":[["05","23",4500,"ASP"]],"CYCA":[["08","26",2500,"GRAVE"]],"CYCC":[["10","28",3500,"ASP"]],"CYCD":[["16","34",6602,"ASP"]],"CYCE":[["10","28",5012,"ASP"],["16","34",4400,"ASP"]],"CYCG":[["15","33",5300,"ASP"]],"CYCH":[["09","27",10006,"ASP"]],"CYCL":[["12","30",6000,"ASP"]],"CYCN":[["13","31",4500,"ASP"]],"CYCP":[["01","19",5000,"ASP"]],"CYCQ":[["05","23",4484,"ASP"]],"CYCR":[["05","23",3990,"CRUSH"]],"CYDA":[["03","21",5000,"CON"]],"CYDB":[["11","29",5006,"GVL"]],"CYDC":[["04","22",3932,"ASP"]],"CYDF":[["07","25",8005,"ASP"]],"CYDM":[["08","26",5000,"GRVL"]],"CYDN":[["14","32",5000,"ASP"],["08","26",2700,"ASP"],["02","20",2000,"GVL"]],"CYDO":[["11","29",4971,"ASP"]],"CYDP":[["06","24",2000,"GRAVE"]],"CYDQ":[["07","25",5001,"ASP"]],"CYEE":[["16","34",3998,"ASP"]],"CYEG":[["02","20",11000,"ASP"],["12","30",10200,"ASP"]],"CYEL":[["12","30",4500,"ASP"]],"CYEM":[["02","20",3500,"ASP"]],"CYEN":[["08","26",5000,"ASP"],["15","33",3000,"ASP"]],"CYER":[["15","33",3500,"GRVL"]],"CYET":[["07","25",6000,"ASP"]],"CYEV":[["06","24",6000,"ASP"]],"CYEY":[["14","32",5000,"ASP"]],"CYFA":[["10","28",3601,"GRVL"]],"CYFB":[["16","34",8605,"ASP"]],"CYFC":[["09","27",8005,"ASP"],["15","33",6000,"ASP"]],"CYFE":[["09","27",5000,"ASP"]],"CYFH":[["09","27",3500,"GRVL"]],"CYFJ":[["02","20",5587,"ASP"]],"CYFO":[["19","01",5004,"ASP"]],"CYFR":[["13","31",4001,"GVL"]],"CYFS":[["14","32",6000,"ASP"]],"CYFT":[["09","27",2500,"GRAVE"]],"CYGB":[["14","32",3000,"ASP"]],"CYGD":[["14","32",5000,"ASP"],["10","28",3000,"ASP"],["05","23",1870,"GRS"]],"CYGE":[["14","32",4500,"ASP"]],"CYGH":[["07","25",4434,"GVL"]],"CYGK":[["01","19",6001,"ASP"],["07","25",3933,"ASP"]],"CYGL":[["13","31",6500,"ASP"]],"CYGM":[["15","33",6800,"ASP"]],"CYGO":[["14","32",3810,"CRUSH"]],"CYGP":[["10","28",5488,"ASP"]],"CYGQ":[["08","26",5000,"ASP"]],"CYGR":[["07","25",4500,"ASP"],["16","34",3600,"ASP"]],"CYGV":[["08","26",4500,"ASP"]],"CYGW":[["03","21",5052,"SAND/"]],"CYGX":[["05","23",5000,"GRAVE"]],"CYHA":[["18","36",3520,"UNK"]],"CYHD":[["12","30",5993,"ASP"]],"CYHE":[["07","25",3960,"TURF"]],"CYHF":[["04","22",4500,"ASP"]],"CYHH":[["09","27",5000,"GRAVE"]],"CYHM":[["12","30",10006,"ASP"],["06","24",6010,"ASP"]],"CYHN":[["07","25",3500,"ASP"]],"CYHO":[["06","24",2500,"GRAVE"]],"CYHR":[["07","25",4500,"ASP"]],"CYHT":[["04","22",5000,"GRVL"]],"CYHU":[["06L","24R",7840,"ASP"],["06R","24L",3920,"ASP"],["10","28",2800,"ASP"]],"CYHY":[["14","32",6000,"ASP"],["05","23",4001,"COM"]],"CYHZ":[["05","23",10500,"ASP"],["14","32",7700,"ASP"]],"CYIB":[["04","22",3500,"ASP"]],"CYID":[["06","24",3950,"ASP"]],"CYIF":[["01","19",4590,"ASP"]],"CYIK":[["07","25",3521,"GVL"]],"CYIV":[["12","30",4000,"CRUSH"]],"CYJF":[["03","21",2946,"GRVL"]],"CYJN":[["11","29",4000,"ASP"],["06","24",2765,"ASP"],["02","20",2474,"ASP"]],"CYJT":[["09","27",10011,"ASP"]],"CYKA":[["09","27",8000,"ASP"],["05","23",1875,"ASP"]],"CYKD":[["13","31",3002,"GVL"]],"CYKF":[["08","26",7003,"ASP"],["14","32",4103,"ASP"]],"CYKG":[["14","32",3511,"GRAVE"]],"CYKJ":[["03","21",5200,"GRAVE"]],"CYKL":[["17","35",5000,"ASP"]],"CYKO":[["08","26",3510,"GVL"]],"CYKQ":[["06","24",3511,"GRAVE"]],"CYKX":[["08","26",4500,"ASP"]],"CYKY":[["08","26",3507,"ASP"],["17","35",2281,"GRS"]],"CYLA":[["05","23",3521,"GRAVE"]],"CYLD":[["10","28",5000,"ASP"],["05","23",3000,"ASP"]],"CYLH":[["08","26",3500,"GRVL"]],"CYLJ":[["09","27",5000,"ASP"],["17","35",2290,"ASP"]],"CYLL":[["08","26",5577,"ASP"],["11","29",1500,"GRS"]],"CYLR":[["18","36",3000,"ASP"]],"CYLU":[["16","34",3521,"GRAVE"]],"CYLW":[["16","34",8900,"ASP"]],"CYMA":[["07","25",4856,"GVL"]],"CYME":[["09","27",5500,"ASP"]],"CYMG":[["05","23",3600,"ASP"]],"CYMH":[["11","29",2500,"GRAVE"]],"CYMJ":[["11L","29R",8326,"ASP"],["11R","29L",7280,"ASP"],["03","21",3400,"ASP"]],"CYML":[["14","32",4501,"ASP"]],"CYMM":[["08","26",7503,"ASP"]],"CYMO":[["06","24",4000,"ASP"],["14","32",3500,"COM"]],"CYMT":[["04","22",6496,"ASP"]],"CYMU":[["02","20",3500,"GRAVE"]],"CYMX":[["06","24",12000,"CON"],["11","29",8852,"CON"]],"CYNA":[["14","32",4494,"ASP"]],"CYNC":[["10","28",3511,"GRAVE"]],"CYND":[["09","27",6000,"ASP"]],"CYNE":[["06","24",3902,"Grave"]],"CYNL":[["16","34",6000,"GRAVE"]],"CYNM":[["15","33",5000,"ASP"]],"CYNN":[["17","35",3350,"GRAVE"]],"CYOC":[["04","22",4900,"GVL"]],"CYOD":[["13L","31R",12600,"ASP"],["13R","31L",10000,"ASP"],["04","22",8270,"ASP"]],"CYOH":[["04","22",3828,"CRUSH"]],"CYOJ":[["13","31",5000,"ASP"]],"CYOO":[["12","30",4750,"ASP"],["05","23",2654,"ASP"]],"CYOP":[["09","27",4539,"ASP"]],"CYOS":[["18","36",3932,"ASP"]],"CYOW":[["14","32",10000,"ASP"],["07","25",8000,"ASP"],["04","22",3300,"ASP"]],"CYPA":[["08","26",5000,"ASP"],["16","34",2500,"GRS"]],"CYPD":[["11","29",5000,"ASP"]],"CYPE":[["04","22",5000,"ASP"]],"CYPG":[["13R","31L",7000,"ASP"],["13L","31R",3130,"ASP"],["02","20",3045,"ASP"],["09","27",2670,"ASP"]],"CYPH":[["06","24",3500,"GRAVE"]],"CYPL":[["09","27",4921,"ASP"]],"CYPM":[["09","27",3500,"GRVL"]],"CYPN":[["11","29",4886,"ASP"]],"CYPO":[["11","29",3520,"Grave"]],"CYPQ":[["09","27",7005,"ASP"],["13","31",2000,"ASPH"]],"CYPR":[["13","31",6000,"ASP"]],"CYPW":[["09","27",3627,"ASP"]],"CYPX":[["01","19",6299,"GVL"]],"CYPY":[["04","22",5000,"ASP"]],"CYPZ":[["11","29",5000,"ASP"]],"CYQA":[["18","36",6000,"ASP"]],"CYQB":[["06","24",9000,"ASP"],["11","29",5700,"ASP"]],"CYQD":[["13","31",5901,"ASP"]],"CYQF":[["17","35",7500,"ASP"],["12","30",3449,"ASP"]],"CYQG":[["07","25",9000,"ASP"],["12","30",5150,"ASP"]],"CYQH":[["09","27",5504,"ASP"]],"CYQI":[["06","24",6000,"ASP"],["15","33",5000,"ASP"]],"CYQK":[["08","26",5800,"ASP"]],"CYQL":[["06","24",6500,"ASP"],["13","31",5500,"ASP"]],"CYQM":[["06","24",10001,"ASP"],["11","29",8000,"ASP"]],"CYQN":[["09","27",3500,"ASP"]],"CYQQ":[["12","30",10000,"PEM"],["18","36",5000,"ASP"]],"CYQR":[["13","31",7900,"ASP"],["08","26",6200,"ASP"]],"CYQS":[["09","27",5013,"ASP"],["15","33",2610,"ASP"],["03","21",2607,"ASP"]],"CYQT":[["07","25",7318,"ASP"],["12","30",5297,"ASP"]],"CYQU":[["12","30",8502,"ASP"],["07","25",6200,"ASP"]],"CYQV":[["04","22",4800,"ASP"],["13","31",3000,"COM"]],"CYQW":[["12","30",5000,"ASP"],["06","24",2565,"ASP"]],"CYQX":[["03","21",10200,"ASP"],["13","31",8900,"ASP"]],"CYQY":[["06","24",7070,"ASP"],["18","36",5997,"ASP"]],"CYQZ":[["13","31",5500,"ASP"]],"CYRI":[["05","23",6000,"ASP"]],"CYRJ":[["16","34",5000,"ASP"]],"CYRL":[["08","26",5001,"ASP"]],"CYRO":[["09","27",3300,"ASP"]],"CYRP":[["10","28",3937,"ASP"],["04","22",2205,"GVL"]],"CYRQ":[["05","23",9006,"ASP"]],"CYRS":[["09","27",3555,"CRUSH"]],"CYRV":[["12","30",4800,"ASP"]],"CYSB":[["04","22",6600,"ASP"],["12","30",5000,"ASP"]],"CYSC":[["13","31",6000,"ASP"],["14","32",6000,"ASPH"]],"CYSF":[["06","24",5050,"TREAT"]],"CYSG":[["06","24",5108,"ASP"]],"CYSH":[["06","24",4000,"ASP"],["15","33",1500,"grass"]],"CYSJ":[["05","23",7000,"ASP"],["14","32",5100,"ASP"]],"CYSK":[["09","27",3800,"GRAVE"]],"CYSL":[["18","36",4000,"ASP"]],"CYSM":[["12","30",6000,"ASP"],["03","21",1800,"COM"]],"CYSN":[["06","24",5000,"ASP"],["01","19",2500,"ASP"],["11","29",2000,"ASP"]],"CYSP":[["16","34",3933,"ASP"]],"CYSQ":[["19","01",3950,"GRVL"]],"CYST":[["04","22",3400,"CRUSH"]],"CYSU":[["05","23",8000,"ASP"]],"CYTA":[["17","35",5000,"ASP"]],"CYTF":[["13","31",5000,"ASP"]],"CYTH":[["06","24",5800,"ASP"],["15","33",5079,"GVL"]],"CYTL":[["14","32",3900,"GRVL"]],"CYTQ":[["05","23",3519,"GRAVE"]],"CYTR":[["06","24",10000,"ASP"],["13","31",3025,"ASP"]],"CYTS":[["03","21",6000,"ASP"],["10","28",4903,"ASP"]],"CYTZ":[["08","26",3988,"ASP"],["06","24",2933,"ASP"]],"CYUB":[["10","28",4600,"GVL"]],"CYUL":[["06L","24R",11000,"ASP"],["06R","24L",9600,"ASP"]],"CYUY":[["08","26",7485,"ASP"]],"CYVB":[["13","31",5985,"ASP"]],"CYVC":[["18","36",5000,"ASP"],["11","29",2396,"GVL"]],"CYVD":[["08","26",4000,"ASPHA"]],"CYVK":[["05","23",3360,"ASP"]],"CYVO":[["18","36",10000,"ASP"]],"CYVP":[["07","25",6000,"ASP"],["13","31",5000,"GVL"]],"CYVQ":[["10","28",5998,"ASP"]],"CYVR":[["08R","26L",11500,"ASP"],["08L","26R",9940,"CON"],["13","31",7300,"CON"]],"CYVV":[["05","23",5021,"ASP"],["11","29",3100,"GVL"]],"CYVZ":[["13","31",3500,"GRVL"]],"CYWG":[["18","36",11000,"ASP"],["13","31",8841,"ASP"]],"CYWJ":[["08","26",3933,"GRVL"]],"CYWK":[["18","36",6002,"ASP"]],"CYWL":[["12","30",7000,"ASP"]],"CYWP":[["02","20",3500,"GRVL"]],"CYWY":[["11","29",3500,"GVL"]],"CYXC":[["16","34",6000,"ASP"]],"CYXE":[["09","27",8300,"ASP"],["15","33",6200,"ASP"]],"CYXH":[["03","21",5000,"ASP"],["09","27",2820,"ASP"]],"CYXJ":[["12","30",6909,"ASP"],["03","21",6698,"ASP"]],"CYXK":[["07","25",4600,"ASP"]],"CYXL":[["16","34",5300,"ASP"]],"CYXQ":[["14","32",3745,"GRVL"]],"CYXR":[["08","26",5998,"ASP"],["16","34",3019,"GVL"]],"CYXS":[["15","33",11450,"ASP"],["06","24",5624,"ASP"],["01","19",3769,"ASP"]],"CYXT":[["15","33",7497,"ASP"],["03","21",5373,"ASP"]],"CYXU":[["15","33",8800,"ASP"],["09","27",6300,"ASP"]],"CYXX":[["07","25",9600,"PEM"],["01","19",5328,"ASP"]],"CYXY":[["14R","32L",9497,"ASP"],["14L","32R",6597,"ASP"]],"CYXZ":[["03","21",4429,"ASP"]],"CYYB":[["08","26",10000,"ASP"],["18","36",4474,"ASP"],["13","31",2500,"GRS"]],"CYYC":[["17L","35R",14000,"CONC"],["17R","35L",12675,"ASP"],["11","29",8000,"ASP"]],"CYYD":[["15","33",5000,"ASP"]],"CYYE":[["04","22",6400,"ASP"],["08","26",3575,"ASP"]],"CYYF":[["16","34",6000,"ASP"]],"CYYG":[["03","21",7002,"ASP"],["10","28",7000,"ASP"]],"CYYJ":[["09","27",7000,"ASP"],["03","21",5027,"ASP"],["14","32",5001,"ASP"]],"CYYL":[["17","35",5000,"ASP"],["08","26",2520,"GVL"]],"CYYN":[["13","31",4250,"ASP"],["04","22",2500,"ASP"]],"CYYQ":[["15","33",9200,"ASP"],["07","25",4000,"GVL"]],"CYYR":[["08","26",11046,"ASP"],["15","33",9580,"ASP"]],"CYYT":[["10","28",8502,"ASP"],["16","34",7005,"ASP"]],"CYYU":[["17","35",5500,"ASP"]],"CYYW":[["12","30",4000,"ASP"],["18","36",2940,"ASP"]],"CYYY":[["06","24",6000,"ASP"],["15","33",3934,"ASP"]],"CYYZ":[["05","23",11120,"ASP/C"],["15L","33R",11050,"ASP"],["06L","24R",9697,"ASP"],["15R","33L",9088,"ASP"],["06R","24L",9000,"ASP"]],"CYZD":[["15","33",7003,"ASP"]],"CYZE":[["11","29",5500,"ASP"]],"CYZF":[["16","34",7500,"ASP"],["10","28",5000,"ASP"]],"CYZG":[["03","21",3523,"Grave"]],"CYZH":[["10","28",5561,"ASP"]],"CYZP":[["13","31",5120,"ASP"]],"CYZR":[["15","33",5100,"ASP"],["06","24",2989,"ASP"]],"CYZT":[["11","29",5000,"ASP"],["08","26",4000,"ASP"],["16","34",4000,"ASP"]],"CYZU":[["11","29",5800,"ASP"]],"CYZV":[["09","27",6552,"ASP"],["13","31",5771,"ASP"]],"CYZW":[["09","27",5028,"GVL"]],"CYZX":[["08","26",8000,"ASP"],["12","30",8000,"ASP"]],"CYZY":[["17","35",5033,"ASP"]],"CZAC":[["10","28",3395,"CRUSH"]],"CZAM":[["14","32",4260,"ASP"]],"CZBB":[["07","25",5606,"ASP"],["13","31",5605,"ASP"]],"CZBD":[["09","27",3000,"CRUSH"]],"CZBF":[["10","28",5613,"ASP"]],"CZBM":[["05","23",5000,"ASP"],["05R","23L",3200,"GRS"]],"CZEE":[["12","30",2590,"GRAVE"]],"CZEM":[["02","20",3512,"GRAVE"]],"CZFA":[["09","27",4000,"GVL"]],"CZFD":[["10","28",3800,"TREAT"]],"CZFG":[["15","33",3000,"CRUSH"]],"CZFM":[["12","30",3500,"GVL"]],"CZFN":[["07","25",3935,"GRAVE"]],"CZGF":[["07","25",4300,"ASP"]],"CZGI":[["09","27",3540,"CRUSH"]],"CZGR":[["18","36",2800,"CRUSH"]],"CZJG":[["15","33",3800,"GRAVE"]],"CZJN":[["02","20",3933,"ASP"],["08","26",1950,"GRS"]],"CZKE":[["06","24",3903,"GRVL"]],"CZLQ":[["12","30",2220,"CRUSH"]],"CZMD":[["05","23",3500,"GRVL"]],"CZMN":[["05","23",2200,"CRUSH"]],"CZMT":[["13","31",5000,"ASP"]],"CZNG":[["10","28",2500,"CRUSH"]],"CZPB":[["10","28",3500,"GRVL"]],"CZPC":[["08","26",6600,"ASP"]],"CZRJ":[["03","21",3500,"GRVL"]],"CZSJ":[["11","29",3500,"GRVL"]],"CZSN":[["18","36",3509,"CRUSH"]],"CZST":[["18","36",3900,"ASP"]],"CZTM":[["01","19",4006,"GRAVE"]],"CZUC":[["05","23",3512,"ASP"]],"CZWH":[["03","21",3500,"CRUSH"]],"CZWL":[["17","35",3793,"Aspha"]],"KABE":[["06","24",7599,"ASP"],["13","31",5800,"ASP"]],"KACK":[["06","24",6303,"ASP"],["15","33",4500,"ASP"]],"KACY":[["13","31",10001,"ASP"],["04","22",6145,"PEM"]],"KADW":[["01L","19R",11301,"CON"],["01R","19L",9756,"PEM"]],"KAGC":[["10","28",6501,"CON"],["13","31",3825,"CON"]],"KAKR":[["07","25",6336,"ASP"]],"KALB":[["01","19",8500,"ASP"],["10","28",7200,"ASP"]],"KALN":[["11","29",8099,"ASP"],["17","35",6500,"ASP"]],"KALO":[["12","30",8399,"ASP"],["18","36",6003,"ASP"]],"KAOO":[["03","21",5465,"ASP"],["12","30",3668,"ASP"]],"KAPG":[["04","22",7998,"ASP"]],"KAPN":[["01","19",9001,"CON"],["07","25",5028,"CON"]],"KART":[["10","28",7001,"ASP"],["07","25",4999,"ASP"]],"KAUG":[["17","35",5002,"ASP"],["08","26",2613,"ASP"]],"KAUW":[["12","30",4950,"ASP"],["04","22",3085,"ASP"]],"KAVP":[["04","22",7502,"ASP"],["10","28",4300,"ASP"]],"KAZO":[["17","35",6502,"ASP"],["05","23",3438,"ASP"],["09","27",2800,"ASP"]],"KBAF":[["02","20",9000,"ASP"],["15","33",5000,"ASP"]],"KBAK":[["05","23",6401,"ASP"],["14","32",5000,"ASP"]],"KBDE":[["12","30",5498,"ASP"]],"KBDL":[["06","24",9510,"ASP"],["15","33",6847,"ASP"]],"KBDR":[["11","29",4759,"ASP"],["06","24",4677,"ASP"]],"KBED":[["11","29",7011,"ASP"],["05","23",5107,"ASP"]],"KBFD":[["14","32",6307,"ASP"],["05","23",4499,"ASP"]],"KBGM":[["16","34",7305,"ASP"],["10","28",5001,"ASP"]],"KBGR":[["15","33",11440,"ASP"]],"KBHB":[["04","22",5200,"ASP"],["17","35",3363,"ASP"]],"KBJI":[["13","31",7004,"ASP"],["07","25",5700,"ASP"]],"KBKL":[["06L","24R",6604,"ASP"],["06R","24L",5197,"ASP"]],"KBLV":[["14L","32R",10000,"CON"],["14R","32L",8006,"PEM"]],"KBMG":[["17","35",6500,"ASP"],["06","24",3798,"ASP"]],"KBMI":[["02","20",8000,"CON"],["11","29",6525,"PEM"]],"KBOS":[["15R","33L",10083,"ASP"],["04R","22L",10006,"ASP"],["04L","22R",7864,"ASP"],["09","27",7001,"ASP"],["14","32",5000,"ASPH-"],["15L","33R",2557,"ASP"]],"KBRD":[["16","34",7100,"CONC-"],["05","23",6512,"ASP"],["12","30",4080,"ASP"]],"KBRL":[["18","36",6102,"PEM"],["12","30",5351,"CON"]],"KBTL":[["05L","23R",10004,"ASP"],["13","31",4837,"ASP"],["05R","23L",4100,"ASP"]],"KBTV":[["15","33",8319,"ASP"],["01","19",4112,"ASP"]],"KBUF":[["05","23",8829,"ASP"],["14","32",7161,"ASP"]],"KBVI":[["10","28",4501,"ASP"]],"KBVY":[["16","34",5001,"ASP"],["09","27",4755,"ASP"]],"KBWI":[["10","28",10503,"ASP"],["15R","33L",9501,"ASP"],["15L","33R",5000,"ASP"]],"KCAK":[["05","23",8204,"ASP"],["01","19",7601,"ASP"]],"KCAR":[["01","19",4003,"ASP"],["11","29",3016,"ASP"]],"KCCY":[["12","30",4000,"CON"],["04","22",2536,"GRS"],["17","35",1780,"GRS"]],"KCEF":[["05","23",11597,"ASP"],["15","33",7085,"ASP"]],"KCGF":[["06","24",5502,"ASP"]],"KCHO":[["03","21",6801,"ASP"]],"KCID":[["09","27",8600,"PER"],["13","31",6200,"PER"]],"KCIU":[["16","34",7203,"CON"],["09","27",5000,"ASP"]],"KCKB":[["03","21",7800,"ASP"]],"KCLE":[["6R","24L",9953,"CON"],["6L","24R",9000,"CON"],["10","28",6018,"concr"]],"KCMH":[["10R","28L",10114,"ASP"],["10L","28R",8000,"ASP"]],"KCMI":[["14L","32R",8101,"CON"],["04","22",6502,"CON"],["14R","32L",3816,"ASP"]],"KCMX":[["14","32",6501,"ASP"],["07","25",5201,"ASP"]],"KCON":[["17","35",6005,"ASP"],["12","30",3200,"ASP"]],"KCOU":[["02","20",7401,"CON"],["13","31",5500,"Concr"]],"KCRW":[["05","23",6715,"ASP"]],"KCVG":[["09","27",12001,"PEM"],["18C","36C",11000,"PEM"],["18L","36R",10000,"CON"],["18R","36L",8000,"CON"]],"KCWA":[["08","26",7723,"CON"],["17","35",6501,"CON"]],"KDAA":[["14","32",5421,"ASP"]],"KDAY":[["06L","24R",10901,"PEM"],["18","36",8502,"PEM"],["06R","24L",7285,"PEM"]],"KDBQ":[["13","31",6502,"CON"],["18","36",6327,"CON"]],"KDCA":[["01","19",7169,"ASP"],["15","33",5204,"ASP"],["04","22",5000,"ASP"]],"KDEC":[["06","24",8496,"PEM"],["12","30",6799,"PEM"],["18","36",5298,"ASP"]],"KDET":[["15","33",5092,"ASP"]],"KDLH":[["09","27",10591,"CON"],["03","21",5719,"ASP"]],"KDOV":[["14","32",12903,"PEM"],["01","19",9602,"PEM"]],"KDPA":[["02L","20R",7571,"CON"],["02R","20L",6451,"CON"],["10","28",4750,"ASP"],["15","33",3399,"ASP"]],"KDSM":[["05","23",9004,"Concr"],["13","31",9001,"ASP"]],"KDTW":[["04R","22L",12003,"CON"],["03R","21L",10001,"CON"],["04L","22R",10000,"CON"],["09L","27R",8708,"PEM"],["03L","21R",8501,"PEM"],["09R","27L",8500,"CON"]],"KDUJ":[["07","25",5503,"ASP"]],"KEAU":[["04","22",8101,"CON"],["14","32",5000,"CON"]],"KEEN":[["02","20",6201,"ASP"],["14","32",4001,"ASP"]],"KEKN":[["14","32",4544,"ASP"],["05","23",4501,"ASP"]],"KELM":[["06","24",8001,"ASP"],["10","28",5404,"ASP"],["05","23",2016,"GRS"]],"KELO":[["12","30",5596,"ASP"]],"KENW":[["07L","25R",6600,"CONC-"],["15","33",4440,"CONC-"],["07R","25L",3302,"ASPH-"]],"KERI":[["06","24",8420,"ASP"],["02","20",3508,"ASP"]],"KEVV":[["04","22",8021,"ASP"],["18","36",6286,"ASP"],["09","27",3497,"ASP"]],"KEWB":[["05","23",5400,"ASP"],["14","32",5002,"ASP"]],"KEWR":[["4L","22R",11000,"ASP"],["4R","22L",9999,"ASP"],["11","29",6725,"ASP"]],"KFDY":[["18","36",6499,"ASP"],["07","25",5883,"ASP"]],"KFFO":[["05L","23R",12600,"PEM"],["05R","23L",7000,"ASP"]],"KFKL":[["03","21",5200,"ASP"],["12","30",3593,"ASP"]],"KFME":[["10","28",3000,"ASP"]],"KFNT":[["18","36",7852,"ASP"],["09","27",7201,"ASP"]],"KFOD":[["06","24",6547,"ASP"],["12","30",5301,"ASP"]],"KFRG":[["14","32",6833,"ASP"],["01","19",5517,"ASP"]],"KFWA":[["05","23",11981,"PEM"],["14","32",8002,"PEM"],["09","27",4001,"PEM"]],"KGFL":[["01","19",5000,"ASP"],["12","30",3999,"ASP"]],"KGON":[["05","23",5000,"ASP"],["15","33",4000,"ASP"]],"KGRB":[["18","36",8700,"CON"],["06","24",7700,"CON"]],"KGRR":[["08R","26L",10001,"CON"],["17","35",8501,"CON"],["08L","26R",5001,"CON"]],"KGTB":[["03","21",10000,"CON"],["15","33",5002,"CON"],["08","26",4501,"CON"]],"KGUS":[["05","23",12501,"ASP"]],"KGYY":[["12","30",8859,"ASP"],["02","20",3604,"ASP"]],"KHFD":[["02","20",4417,"ASP"],["11","29",2314,"ASP"]],"KHGR":[["09","27",7000,"ASP"],["02","20",3165,"ASP"]],"KHIB":[["13","31",6758,"ASP"],["04","22",3075,"ASP"]],"KHLG":[["03","21",5002,"ASP"],["16","34",4499,"ASP"]],"KHPN":[["16","34",6549,"ASP"],["11","29",4451,"ASP"]],"KHTS":[["12","30",7017,"ASP"]],"KHUF":[["05","23",9021,"ASP"],["14","32",7200,"PEM"]],"KHUL":[["05","23",5015,"ASP"],["01","19",2700,"ASP"]],"KHVN":[["02","20",5600,"ASP"]],"KHYA":[["06","24",5425,"ASP"],["15","33",5255,"ASP"]],"KHYR":[["03","21",5003,"ASP"],["16","34",1088,"GRS"]],"KHZY":[["09","27",5900,"ASP"]],"KIAD":[["01C","19C",11500,"CONC-"],["01R","19L",11500,"CON"],["12","30",10501,"CON"],["01L","19R",9400,"CON"]],"KIAG":[["10","28",9826,"PEM"],["06","24",5188,"ASP"]],"KIKK":[["04","22",5981,"ASP"],["16","34",4398,"ASP"]],"KILG":[["09","27",7275,"ASP"],["01","19",7012,"ASP"],["14","32",4602,"ASP"]],"KILN":[["04L","22R",10701,"CON"],["04R","22L",9000,"CON"]],"KIND":[["05L","23R",11200,"CON"],["05R","23L",10000,"CON"],["14","32",7278,"ASP"]],"KINL":[["13","31",7400,"ASP"],["04","22",2999,"ASP"]],"KIPT":[["09","27",6825,"ASP"],["12","30",4273,"ASP"]],"KIRK":[["18","36",6005,"CON"],["09","27",1370,"GRE"]],"KISP":[["06","24",7006,"ASP"],["15R","33L",5186,"ASP"],["15L","33R",3175,"ASP"]],"KITH":[["14","32",6977,"ASP"],["15","33",2018,"GRS"]],"KJFK":[["13R","31L",14511,"PEM"],["04L","22R",12079,"PEM"],["13L","31R",10000,"PEM"],["04R","22L",8400,"ASP"]],"KJHW":[["07","25",5300,"ASP"],["13","31",4499,"ASP"]],"KJST":[["15","33",7004,"ASP"],["05","23",4387,"ASP"]],"KJXN":[["07","25",5351,"ASP"],["14","32",4000,"ASP"]],"KLAF":[["10","28",6600,"ASP"],["05","23",4225,"ASP"]],"KLAN":[["10R","28L",8506,"ASP"],["06","24",5003,"PEM"],["10L","28R",3601,"ASP"]],"KLBE":[["06","24",8222,"ASP"]],"KLCK":[["05R","23L",12103,"PEM"],["05L","23R",11902,"ASP"]],"KLEB":[["07","25",5496,"ASP"],["18","36",5200,"ASP"]],"KLEX":[["04","22",7004,"ASP"],["09","27",4000,"concr"]],"KLGA":[["04","22",7002,"ASP"],["13","31",7002,"ASP"]],"KLNS":[["08","26",6933,"ASP"],["13","31",4102,"ASP"]],"KLOU":[["06","24",4358,"ASP"],["15","33",3580,"ASPH-"]],"KLSE":[["18","36",8742,"CON"],["13","31",6050,"ASP"],["04","22",5199,"ASP"]],"KLUK":[["03R","21L",6101,"ASP"],["07","25",5127,"ASP"],["03L","21R",3802,"ASP"]],"KLWM":[["05","23",5001,"ASP"],["14","32",3654,"ASP"]],"KMBS":[["05","23",8002,"ASP"],["14","32",6399,"ASP"]],"KMCI":[["01L","19R",10801,"CON"],["09","27",9501,"ASP"],["01R","19L",9500,"CON"]],"KMCW":[["18","36",6501,"ASP"],["12","30",5502,"ASP"]],"KMDT":[["13","31",10001,"ASP"]],"KMDW":[["13L","31R",6522,"CON"],["04R","22L",6445,"PEM"],["04L","22R",5507,"ASP"],["13R","31L",3859,"CON"]],"KMFD":[["14","32",9001,"ASP"],["05","23",6819,"ASP"]],"KMGW":[["18","36",5199,"ASP"]],"KMHT":[["17","35",9250,"ASP"],["06","24",7651,"ASP"]],"KMIE":[["14","32",6500,"ASP"],["03","21",5198,"ASP"]],"KMIV":[["10","28",6003,"ASP"],["14","32",5058,"CON"]],"KMKC":[["01","19",6827,"CON"],["04","22",5050,"ASP"]],"KMKE":[["01L","19R",9990,"PEM"],["07R","25L",8300,"PEM"],["13","31",5537,"ASP"],["07L","25R",4797,"ASP"],["01R","19L",4182,"ASP"]],"KMKG":[["06","24",6500,"ASP"],["14","32",6100,"ASP"]],"KMLI":[["09","27",10002,"PEM"],["13","31",7301,"PEM"],["05","23",3514,"ASP"]],"KMMU":[["05","23",5998,"ASP"],["13","31",3997,"ASP"]],"KMPV":[["17","35",5000,"ASP"],["05","23",3001,"ASP"]],"KMRB":[["08","26",8815,"ASP"]],"KMSN":[["18","36",9006,"CON"],["03","21",7200,"CON"],["14","32",5846,"CON"]],"KMSP":[["04","22",11006,"CON"],["12R","30L",10000,"PEM"],["12L","30R",8200,"PEM"],["17","35",8000,"CON"]],"KMSS":[["05","23",5601,"ASP"],["09","27",4000,"ASP"]],"KMTC":[["01","19",9000,"PEM"]],"KMTN":[["15","33",6999,"CON"]],"KMUI":[["07","25",3981,"ASP"]],"KNEL":[["06","24",5002,"ASP"],["15","33",5001,"ASP"]],"KNHK":[["06","24",11799,"PEM"],["14","32",9732,"PEM"],["02","20",5021,"ASP"]],"KNYG":[["02","20",4250,"ASP"]],"KOQU":[["16","34",7000,"PEM"],["05","23",4000,"ASP"]],"KORD":[["10L","28R",13000,"CON"],["09R","27L",11260,"ASP"],["09C","27C",11245,"concr"],["10C","28C",10800,"CON"],["04R","22L",8075,"ASP"],["04L","22R",7500,"ASP"],["09L","27R",7500,"ASP"],["10R","28L",7500,"CONCR"]],"KORH":[["11","29",7001,"ASP"],["15","33",5000,"ASP"]],"KOSH":[["18","36",8002,"CON"],["09","27",6179,"ASP"],["05","23",3424,"ASP"],["13","31",3061,"ASP"]],"KOSU":[["09R","27L",5004,"ASP"],["05","23",3562,"ASP"],["09L","27R",2994,"ASP"]],"KOTM":[["13","31",6001,"PEM"],["04","22",4601,"ASP"]],"KOWD":[["17","35",4007,"ASP"],["10","28",3995,"ASP"]],"KPBG":[["17","35",11759,"CON"]],"KPHL":[["09R","27L",12000,"ASP"],["09L","27R",9500,"ASP"],["17","35",6500,"ASP"],["08","26",5001,"ASP"]],"KPIA":[["13","31",10104,"CON"],["04","22",8004,"ASP"]],"KPIT":[["10R","28L",11500,"CON"],["10C","28C",10775,"PEM"],["10L","28R",10502,"PEM"],["14","32",8101,"CON"]],"KPKB":[["03","21",7240,"ASP"],["10","28",4002,"ASP"]],"KPLN":[["14","32",6513,"ASP"],["05","23",5401,"ASP"]],"KPNE":[["06","24",7000,"ASP"],["15","33",4999,"ASP"]],"KPOU":[["06","24",5001,"ASP"],["15","33",2743,"PEM"],["07","25",1357,"GRS"]],"KPQI":[["01","19",7441,"ASP"],["10","28",6000,"ASP"]],"KPSM":[["16","34",11321,"PEM"]],"KPTK":[["09R","27L",6521,"ASP"],["09L","27R",5676,"ASP"],["18","36",2582,"ASP"]],"KPVD":[["05","23",8700,"ASP"],["16","34",6081,"ASP"]],"KPWK":[["16","34",5001,"ASP"],["12","30",4415,"ASP"]],"KPWM":[["11","29",7200,"ASP"],["18","36",6100,"ASP"]],"KRDG":[["13","31",6350,"ASP"],["18","36",5151,"ASP"]],"KRFD":[["07","25",10002,"PEM"],["01","19",8200,"ASP"]],"KRHI":[["09","27",6800,"CON"],["15","33",5201,"ASP"]],"KRME":[["15","33",11820,"CON"]],"KRNH":[["14","32",5507,"ASP"],["04","22",2006,"GRS"]],"KROC":[["04","22",8001,"ASP"],["10","28",6402,"ASP"],["07","25",4000,"ASP"]],"KRST":[["13","31",9034,"CON"],["03","21",7301,"CON"]],"KRUT":[["01","19",5304,"ASP"],["13","31",3169,"ASP"]],"KSAW":[["01","19",9072,"PEM"]],"KSBN":[["09R","27L",8412,"ASP"],["18","36",7101,"ASP"],["09L","27R",4300,"ASP"]],"KSBY":[["14","32",6400,"PEM"],["05","23",5000,"ASP"]],"KSCH":[["04","22",7001,"ASP"],["10","28",4850,"ASP"]],"KSDF":[["17R","35L",11887,"CON"],["17L","35R",8578,"CON"],["11","29",7251,"CON"]],"KSGH":[["06","24",9010,"PEM"],["15","33",5498,"ASP"]],"KSHD":[["05","23",6002,"ASP"]],"KSLK":[["05","23",6573,"ASP"],["09","27",3997,"ASP"]],"KSPI":[["04","22",8001,"CON"],["13","31",7399,"ASP"],["18","36",5300,"PEM"]],"KSTC":[["13","31",7500,"CON"],["05","23",3000,"ASP"]],"KSTJ":[["17","35",8061,"CON"],["13","31",4797,"PEM"]],"KSTL":[["12R","30L",11020,"CON"],["12L","30R",9013,"CON"],["11","29",9000,"CON"],["06","24",7603,"CON"]],"KSTP":[["14","32",6491,"ASP"],["13","31",4004,"ASP"],["09","27",3642,"ASP"]],"KSUS":[["08R","26L",7486,"CON"],["08L","26R",5000,"ASP"]],"KSWF":[["09","27",11817,"ASP"],["16","34",6004,"ASP"]],"KSYR":[["10","28",9013,"ASP"],["15","33",7499,"ASP"]],"KSZL":[["01","19",12400,"CON"]],"KTEB":[["01","19",6997,"ASP"],["06","24",6014,"ASP"]],"KTOL":[["07","25",10600,"ASP"],["16","34",5599,"ASP"]],"KTTN":[["06","24",6006,"ASP"],["16","34",4800,"ASP"]],"KTVC":[["10","28",7016,"ASP"],["18","36",5378,"ASP"]],"KUIN":[["04","22",7098,"PEM"],["18","36",5399,"CON"],["13","31",5397,"ASP"]],"KUNV":[["06","24",6701,"ASP"]],"KVOK":[["09","27",9000,"CON"]],"KVPZ":[["09","27",7001,"ASP"],["18","36",4001,"ASP"]],"KWRI":[["06","24",11451,"ASP"],["18","36",7126,"ASP"]],"KWWD":[["01","19",5252,"ASP"],["10","28",5000,"ASP"]],"KYIP":[["05","23",7543,"CON"],["09","27",5001,"ASP"]],"KYNG":[["14","32",9003,"ASP"],["05","23",5002,"ASP"]],"KZZV":[["04","22",4999,"PEM"],["16","34",4998,"PEM"]]};
+var WXC={},WXKEY="planvol_wx",autoTok=0,autoTimer=null,lastSig="",lastWsig="",WXLIST=null,CATS=["VFR","MVFR","IFR","LIFR"];
+(function(){try{var j=localStorage.getItem(WXKEY);if(j){WXC=JSON.parse(j)||{};var lim=Date.now()-3*86400000;Object.keys(WXC).forEach(function(k){if(!WXC[k]||WXC[k].t<lim)delete WXC[k]})}}catch(e){WXC={}}})();
+function wxcSave(){try{localStorage.setItem(WXKEY,JSON.stringify(WXC))}catch(e){}}
+function hhmm(ms){var d=new Date(ms);return ("0"+d.getHours()).slice(-2)+":"+("0"+d.getMinutes()).slice(-2)}
+function wxCodeFor(p){if(!p)return "";var k=(p.n||"").toUpperCase();return APT[k]?k:(nearestApt(p.la,p.lo)||"")}
+function metarOf(code){var r=WX[code];if(!r||!r.metar)return null;return parseMetar(r.metar)}
+
+/* Pistes (OurAirports) */
+function rwNum(id){return parseInt(id,10)}
+function rwyLen(code,n){
+  var rw=RWY[code],v=parseInt(n,10),best=null;
+  if(!rw||isNaN(v))return null;
+  rw.forEach(function(r){if(rwNum(r[0])===v||rwNum(r[1])===v){if(best===null||r[2]>best)best=r[2]}});
+  return best;
+}
+function bestRwy(code,wd,ws){
+  var rw=RWY[code];if(!rw||!rw.length)return null;
+  var long=rw.filter(function(r){return r[2]>=2500}),cand=long.length?long:rw,best=null;
+  cand.forEach(function(r){
+    [r[0],r[1]].forEach(function(id){
+      var h=rwNum(id)*10,hw=(wd!==null&&ws>=3)?ws*Math.cos(rad(wd-h)):0,sc=(wd!==null&&ws>=3)?hw:0;
+      if(best===null||sc>best.sc+0.01||(Math.abs(sc-best.sc)<=0.01&&r[2]>best.len))best={id:id,len:r[2],sc:sc,surf:r[3]};
+    });
+  });
+  return best;
+}
+
+/* Récupération avec cache (valable 8 min) et repli hors ligne */
+async function wxFetch(code,force){
+  var c=WXC[code],now=Date.now();
+  function fromCache(st){return {code:code,metar:c.metar,taf:c.taf,via:c.via,fail:false,stale:st,t:c.t}}
+  if(!force&&c&&now-c.t<480000&&(c.metar||c.taf))return fromCache(false);
+  if(navigator.onLine===false)return c?fromCache(true):{code:code,fail:true,metar:null,taf:null};
+  var r=await wxOne(code);
+  if(!r.fail&&(r.metar||r.taf)){WXC[code]={metar:r.metar,taf:r.taf,via:r.via,t:now};r.t=now;return r}
+  if(c)return fromCache(true);
+  return r;
+}
+function autoAlts(st){
+  if(!S.pts.length)return [];
+  var a=S.pts[S.pts.length-1],c=[];
+  Object.keys(APT).forEach(function(k){
+    if(st.indexOf(k)>=0||!/^C[YZ][A-Z]{2}$/.test(k))return;
+    var d=dist(a.la,a.lo,APT[k][0],APT[k][1]);
+    if(d>=8&&d<=80)c.push([d,k]);
+  });
+  c.sort(function(x,y){return x[0]-y[0]});
+  return c.slice(0,4).map(function(x){return x[1]});
+}
+function scheduleAuto(d){clearTimeout(autoTimer);autoTimer=setTimeout(function(){if(S.pts.length)loadWx(false)},d===undefined?1200:d)}
+async function loadWx(force){
+  var st=wxStations(),stn=$("wxSt"),tok=++autoTok;
+  if(!st.length){$("wx").innerHTML="";WX={};WXLIST=null;stn.textContent="Ajoute un aéroport à la route ou une station ci-dessus.";refresh();return}
+  stn.textContent="Chargement de "+st.join(", ")+"…";
+  var alts=autoAlts(st),all=st.concat(alts);
+  var out=await Promise.all(all.map(function(k){return wxFetch(k,force===true)}));
+  if(tok!==autoTok)return;
+  out.forEach(function(r,i){r.alt=i>=st.length});
+  out=out.filter(function(r){return !r.alt||(r.metar&&!r.fail)});
+  WX={};out.forEach(function(r){WX[r.code]=r});WXLIST=out;wxcSave();WXTIME=new Date();
+  var main=out.filter(function(r){return !r.alt}),fails=main.filter(function(r){return r.fail}).length,stale=main.filter(function(r){return r.stale});
+  if(fails===main.length)stn.textContent="Aucune réponse. Dans l’aperçu de claude.ai, les requêtes externes sont bloquées : ouvre la version hébergée. Sinon, vérifie ta connexion ou ouvre « Si la météo ne s’affiche pas ».";
+  else stn.textContent="Stations : "+st.join(", ")+(alts.length&&out.some(function(r){return r.alt})?" · dégagements possibles : "+out.filter(function(r){return r.alt}).map(function(r){return r.code}).join(", "):"")+". Mis à jour à "+hhmm(Date.now())+"."+(stale.length?" Données enregistrées (hors ligne ou sans réponse) pour "+stale.map(function(r){return r.code+" de "+hhmm(r.t)}).join(", ")+".":"");
+  renderWx(out);
+  autoApply();
+}
+
+/* Remplissage automatique des entrées à partir des METAR */
+function applyOne(w,force){
+  var code=pfCode(w);if(!code)return null;
+  var o=metarOf(code);if(!o)return null;
+  if(!force&&o.age!==undefined&&o.age>240)return null;
+  var p=S.pf[w];if(force)p.man={};
+  var man=p.man||(p.man={}),got=[];
+  if(!man.oat&&o.temp!==undefined){p.oat=String(o.temp);got.push(o.temp+" °C")}
+  if(!man.qnh&&(o.inhg||o.hpa)){p.qnh=(o.inhg||o.hpa/33.8639).toFixed(2);got.push(fr(p.qnh)+" inHg")}
+  if(o.wspd!==undefined){
+    if(!man.ws)p.ws=String(o.wspd);
+    if(!man.wd)p.wd=(!o.vrb&&o.wdir!==null&&o.wspd>0)?String((Math.round(o.wdir+S.decl)%360+360)%360||360):"";
+    got.push(o.wspd===0?"vent calme":(o.vrb?"vent variable "+o.wspd+" kt":"vent "+deg(o.wdir+S.decl)+" mag. / "+o.wspd+" kt"));
+  }
+  var wdM=(p.wd!==""&&p.wd!==undefined&&!isNaN(+p.wd))?+p.wd:null,wsN=+p.ws||0,rtxt="";
+  if(!man.rwy){
+    var b=bestRwy(code,wdM,wsN);
+    if(b){p.rwy=String(rwNum(b.id));p.rwyTxt=b.id;rtxt="piste "+b.id+" choisie"+(wdM!==null&&wsN>=3?" face au vent":" (la plus longue)")}
+  }else rtxt="piste "+p.rwy+" saisie";
+  if(!man.len){var L=rwyLen(code,p.rwy);if(L!==null){p.len=String(L);got.push("piste de "+sp(L)+" ft")}}
+  if(rtxt)got.push(rtxt);
+  var age=o.age===undefined?"":" (il y a "+Math.max(0,o.age)+" min)";
+  return "Rempli avec le METAR de "+code+age+" : "+got.join(", ")+"."+(o.gust?" Rafales à "+o.gust+" kt, non incluses.":"")+" Modifie un champ pour le fixer à la main. Longueur de piste : données OurAirports, à vérifier dans le CFS.";
+}
+function autoApply(){
+  if(S.auto===false){refresh();return}
+  var msgs=[];
+  ["dep","arr"].forEach(function(w){
+    var m=applyOne(w,false),el=$("pf_"+w+"_m");
+    if(m){el.hidden=false;el.textContent=m;msgs.push(pfCode(w))}
+  });
+  var parts=[],u=0,v=0,n=0;
+  if(S.windMan!==true){
+    [pfCode("dep"),pfCode("arr")].forEach(function(c,i,a){
+      if(!c||(i===1&&c===a[0]))return;
+      var o=metarOf(c);if(!o||o.wspd===undefined||(o.age!==undefined&&o.age>240))return;
+      if(o.vrb||o.wdir===null){if(o.wspd===0)n++;return}
+      var sp2=o.gust?Math.max(o.wspd,Math.round((o.wspd+o.gust)/2)):o.wspd;
+      u+=-sp2*Math.sin(rad(o.wdir));v+=-sp2*Math.cos(rad(o.wdir));n++;parts.push(c);
+    });
+    if(n>0){
+      u/=n;v/=n;var spd=Math.sqrt(u*u+v*v);
+      if(spd<0.5){S.ws=0}
+      else{S.ws=Math.round(spd);S.wd=Math.round((Math.atan2(-u,-v)*180/Math.PI+360)%360)||360}
+      S.windAuto=parts.join(" et ")||"METAR";
+    }
+  }
+  syncInputs();
+  var wm="";
+  if(S.windMan===true)wm=" Le vent de la route a été saisi à la main : il n’est pas modifié.";
+  else if(S.windAuto)wm=" Vent de la route : "+(S.ws>0?deg(S.wd)+" / "+S.ws+" kt":"calme")+" (moyenne des vents de surface de "+S.windAuto+"). Le vent en altitude peut être très différent.";
+  $("autoMsg").textContent=msgs.length||S.windAuto?("Automatique : température, calage, vent et piste remplis pour "+(msgs.join(" et ")||"la route")+"."+wm):("Automatique : en attente d’un METAR pour le départ ou l’arrivée (le point doit être un aéroport connu)."+wm);
+  refresh();
+}
+$("autoOn").addEventListener("change",function(){S.auto=$("autoOn").checked;if(S.auto)autoApply();else{$("autoMsg").textContent="Remplissage automatique désactivé : tes valeurs ne seront plus modifiées.";refresh()}});
+$("autoReset").onclick=function(){
+  S.windMan=false;S.auto=true;
+  ["dep","arr"].forEach(function(w){S.pf[w].man={}});
+  autoApply();
+};
+$("wxGo").onclick=function(){loadWx(true)};
+window.addEventListener("online",function(){offUi();scheduleAuto(500)});
+
+/* ---------- TAF : lecture et évaluation à l'heure du vol ---------- */
+function tafMs(dd,hh,mm,ref){
+  var r=ref===undefined?Date.now():ref,d=new Date(r),y=d.getUTCFullYear(),mo=d.getUTCMonth(),best=null,bd=1e18;
+  [-1,0,1].forEach(function(k){var t=Date.UTC(y,mo+k,+dd,+hh,+(mm||0));if(Math.abs(t-r)<bd){bd=Math.abs(t-r);best=t}});
+  return best;
+}
+function tafEl(s){
+  s=" "+s;var o={clouds:[],hasCl:false},m;
+  m=/\s(VRB|\d{3})(\d{2,3})(?:G(\d{2,3}))?KT\b/.exec(s);
+  if(m){o.wspd=+m[2];o.gust=m[3]?+m[3]:null;o.wdir=m[1]==="VRB"?null:+m[1]}
+  m=/\s((?:P|M)?\d+\s\d\/\d|(?:P|M)?\d\/\d|(?:P|M)?\d+)SM\b/.exec(s);if(m)o.vis=parseVis(m[1]);
+  var re=/\b(FEW|SCT|BKN|OVC|VV)(\d{3})/g;
+  while((m=re.exec(s))){o.clouds.push({c:m[1],ft:+m[2]*100});o.hasCl=true}
+  if(/\b(SKC|CLR|NSC)\b/.test(s))o.hasCl=true;
+  return o;
+}
+function tafMerge(b,e){
+  var r={vis:b.vis,clouds:b.clouds||[],wspd:b.wspd,gust:b.gust,wdir:b.wdir};
+  if(e.vis!==undefined)r.vis=e.vis;
+  if(e.hasCl)r.clouds=e.clouds;
+  if(e.wspd!==undefined){r.wspd=e.wspd;r.gust=e.gust;r.wdir=e.wdir}
+  return r;
+}
+function stRank(st){
+  var v=st.vis===undefined?99:st.vis,c=99999;
+  (st.clouds||[]).forEach(function(k){if((k.c==="BKN"||k.c==="OVC"||k.c==="VV")&&k.ft<c)c=k.ft});
+  return (v<1||c<500)?3:((v<3||c<1000)?2:((v<=5||c<=3000)?1:0));
+}
+function stDesc(st){
+  var c=null;(st.clouds||[]).forEach(function(k){if((k.c==="BKN"||k.c==="OVC"||k.c==="VV")&&(c===null||k.ft<c))c=k.ft});
+  return (st.vis!==undefined?"visibilité "+fr(+st.vis.toFixed(1))+" SM":"")+(c!==null?(st.vis!==undefined?", ":"")+"plafond "+sp(c)+" ft":"");
+}
+function parseTaf(txt){
+  if(!txt)return null;
+  var tk=txt.replace(/=$/,"").trim().split(/\s+/),i,m,vf=null,vt=null;
+  for(i=0;i<tk.length;i++){
+    m=/^(\d{2})(\d{2})\/(\d{2})(\d{2})$/.exec(tk[i]);
+    if(m){vf=tafMs(m[1],m[2],0);vt=tafMs(m[3],m[4],0,vf);break}
+  }
+  if(vf===null)return null;
+  var segs=[],cur={type:"BASE",from:vf,to:vt,toks:[]},j;
+  for(j=i+1;j<tk.length;j++){
+    var t=tk[j];
+    if(t==="RMK")break;
+    if((m=/^FM(\d{2})(\d{2})(\d{2})$/.exec(t))){segs.push(cur);cur={type:"FM",from:tafMs(m[1],m[2],m[3],vf),to:vt,toks:[]};continue}
+    if(t==="BECMG"||t==="TEMPO"||/^PROB\d{2}$/.test(t)){
+      var typ=t==="BECMG"?"BECMG":"TEMPO",pr=/^PROB/.test(t);
+      if(pr&&tk[j+1]==="TEMPO")j++;
+      var pm=/^(\d{2})(\d{2})\/(\d{2})(\d{2})$/.exec(tk[j+1]||"");
+      if(pm){j++;segs.push(cur);cur={type:typ,prob:pr,from:tafMs(pm[1],pm[2],0,vf),to:tafMs(pm[3],pm[4],0,vf),toks:[]}}
+      continue;
+    }
+    cur.toks.push(t);
+  }
+  segs.push(cur);
+  var bases=[],temps=[],st={clouds:[]};
+  segs.forEach(function(s){
+    var e=tafEl(s.toks.join(" "));
+    if(s.type==="BASE"){st=tafMerge({clouds:[]},e);bases.push({from:s.from,to:vt,st:st})}
+    else if(s.type==="FM"||s.type==="BECMG"){
+      if(bases.length)bases[bases.length-1].to=s.from;
+      st=tafMerge(st,e);bases.push({from:s.from,to:vt,st:st});
+    }else temps.push({from:s.from,to:s.to,st:tafMerge(st,e),prob:!!s.prob});
+  });
+  return {vf:vf,vt:vt,bases:bases,temps:temps};
+}
+function tafWin(P,t1,t2){
+  if(!P)return null;
+  if(t2<P.vf||t1>P.vt)return {covered:false};
+  var R={covered:true,base:-1,baseSt:null,temp:-1,tempSt:null,wmax:0,gmax:0};
+  function w(b,tmp){
+    if(!(b.from<t2&&b.to>t1))return;
+    var r=stRank(b.st);
+    if(!tmp&&r>R.base){R.base=r;R.baseSt=b.st}
+    if(tmp&&r>R.temp){R.temp=r;R.tempSt=b.st}
+    R.wmax=Math.max(R.wmax,b.st.wspd||0);R.gmax=Math.max(R.gmax,b.st.gust||0);
+  }
+  P.bases.forEach(function(b){w(b,false)});
+  P.temps.forEach(function(b){w(b,true)});
+  return R;
+}
+function flightTimes(C){
+  var d=depMin();if(d==null||!S.date)return null;
+  var ld=localDate(S.date,d);if(!ld||isNaN(ld.getTime()))return null;
+  return {etd:ld.getTime(),eta:ld.getTime()+C.tT*3600000};
+}
+function winFor(code,ft){
+  var dc=wxCodeFor(S.pts[0]),ac=wxCodeFor(S.pts[S.pts.length-1]),H=3600000;
+  if(WX[code]&&WX[code].alt||code===ac)return [ft.eta-H,ft.eta+H];
+  if(code===dc)return [ft.etd,ft.etd+H];
+  return [ft.etd,ft.eta];
+}
+/* Évalue le TAF d'une station pour l'heure du vol : {lvl, txt} */
+function fcEval(code,C,ft){
+  var r=WX[code];if(!r||!r.taf)return null;
+  if(!ft)return {lvl:"info",txt:"Entre la date et l’heure de départ (étape Conditions) pour évaluer le TAF à l’heure de ton vol."};
+  var P=parseTaf(r.taf),w=winFor(code,ft),lab=hhmm(w[0])+" à "+hhmm(w[1]);
+  if(!P)return {lvl:"warn",txt:"TAF illisible : lis-le à la main."};
+  var T=tafWin(P,w[0],w[1]);
+  if(!T.covered)return {lvl:"warn",txt:"Le TAF ne couvre pas l’heure du vol ("+lab+") : "+(w[0]>P.vt?"vol après la fin de validité.":"vol avant le début de validité.")};
+  var lvl=T.base>=2?"bad":(T.base===1?"warn":"ok"),txt="Prévu de "+lab+" : "+(T.base<0?"--":CATS[T.base]);
+  if(T.baseSt&&T.base>=1)txt+=" ("+stDesc(T.baseSt)+")";
+  if(T.temp>T.base&&T.tempSt){txt+=", "+CATS[T.temp]+" temporaire ("+stDesc(T.tempSt)+")";if(lvl==="ok")lvl="warn"}
+  var g=Math.max(T.wmax,T.gmax);
+  if(g>=25){txt+=", vent jusqu’à "+g+" kt";if(lvl==="ok")lvl="warn"}
+  else if(T.gmax>=20&&T.gmax>=T.wmax+10){txt+=", rafales jusqu’à "+T.gmax+" kt";if(lvl==="ok")lvl="warn"}
+  return {lvl:lvl,txt:txt+"."};
+}
+
+/* ---------- Verdict de préparation ---------- */
+function metarBrief(o){
+  var p=[];
+  if(o.wspd!==undefined)p.push(o.wspd===0?"vent calme":("vent "+(o.vrb?"variable":deg(o.wdir)+" (vrai)")+" "+o.wspd+" kt"+(o.gust?" rafales "+o.gust:"")));
+  if(o.visTxt)p.push("visibilité "+o.visTxt.replace(/^P/,">").replace(/^M/,"<")+" SM");
+  p.push(o.ceil!==null?"plafond "+sp(o.ceil)+" ft":"pas de plafond");
+  if(o.age!==undefined)p.push("il y a "+Math.max(0,o.age)+" min");
+  return p.join(", ");
+}
+function buildVerdict(C){
+  var it=[],box=$("vd"),isDA=AIRCRAFT[S.ac].n===DA20;
+  function add(l,t){it.push({l:l,t:t})}
+  if(S.pts.length<2){LAST.vd=null;$("vdBar").hidden=true;box.innerHTML="<p class=\"note\" style=\"margin-top:0\">Ajoute au moins deux points à l’étape Route pour obtenir le verdict.</p>";return}
+  var ft=flightTimes(C),dc=wxCodeFor(S.pts[0]),ac=wxCodeFor(S.pts[S.pts.length-1]),arrBad=false,arrCat=null;
+  /* Météo départ et arrivée */
+  [["Départ",dc,true],["Arrivée",ac,false]].forEach(function(x){
+    var code=x[1];
+    if(!code){add("warn",x[0]+" : aucun aéroport avec météo à moins de 60 NM.");return}
+    var r=WX[code];
+    if(!r){add("info",x[0]+" ("+code+") : météo pas encore chargée."+(navigator.onLine===false?" Hors ligne : ouvre l’étape Conditions quand tu as du réseau.":""));return}
+    var o=r.metar?parseMetar(r.metar):null,lvl;
+    if(!o)add("warn",x[0]+" "+code+" : pas de METAR pour cette station.");
+    else{
+      lvl=o.cat==="VFR"?"ok":(o.cat==="NA"||o.cat==="MVFR"?"warn":"bad");
+      var old=o.age!==undefined&&o.age>90;
+      if(old&&lvl==="ok")lvl="warn";
+      add(lvl,x[0]+" "+code+" : "+(o.cat==="NA"?"catégorie inconnue":o.cat)+" — "+metarBrief(o)+(r.stale?". Données enregistrées de "+hhmm(r.t)+" (sans réseau)":"")+(old?". METAR trop ancien pour s’y fier":"")+".");
+      if(!x[2]){arrCat=o.cat;if(lvl==="bad")arrBad=true}
+      if(o.temp!==undefined&&o.dew!==undefined&&o.temp-o.dew<=3)add("warn",code+" : écart température et rosée de "+(o.temp-o.dew)+" °C, risque de brouillard ou de nuages bas.");
+      if(o.gust&&o.gust>=25)add("warn",code+" : rafales à "+o.gust+" kt.");
+    }
+    var fc=fcEval(code,C,ft);
+    if(fc){add(fc.lvl,"TAF "+code+" : "+fc.txt);if(!x[2]&&fc.lvl==="bad")arrBad=true}
+    else if(r.metar||r.fail===false)add("info","TAF "+code+" : aucun TAF pour cette station.");
+  });
+  /* Stations en route */
+  var mids=[];
+  Object.keys(WX).forEach(function(k){
+    var r=WX[k];if(r.alt||k===dc||k===ac||!r.metar)return;
+    var o=parseMetar(r.metar);if(o.cat==="MVFR"||o.cat==="IFR"||o.cat==="LIFR")mids.push(k+" "+o.cat);
+  });
+  if(mids.length)add("warn","En route : "+mids.join(", ")+".");
+  Object.keys(WX).forEach(function(k){
+    var r=WX[k];if(r.alt||k===dc||k===ac||!r.taf||!ft)return;
+    var fc=fcEval(k,C,ft);if(fc&&fc.lvl!=="ok"&&fc.lvl!=="info")add(fc.lvl,"TAF "+k+" (en route) : "+fc.txt);
+  });
+  /* Dégagement */
+  var alts=Object.keys(WX).filter(function(k){return WX[k].alt&&WX[k].metar}).map(function(k){
+    var o=parseMetar(WX[k].metar),a=APT[k],e=S.pts[S.pts.length-1];
+    return {k:k,o:o,d:dist(e.la,e.lo,a[0],a[1])};
+  }).filter(function(a){return a.o.cat==="VFR"||a.o.cat==="MVFR"}).sort(function(a,b){return a.d-b.d});
+  if(alts.length)add(arrBad&&alts[0].o.cat!=="VFR"?"warn":"info","Dégagement possible : "+alts[0].k+" ("+alts[0].o.cat+", "+Math.round(alts[0].d)+" NM de l’arrivée)"+(alts[1]?" ou "+alts[1].k+" ("+alts[1].o.cat+", "+Math.round(alts[1].d)+" NM)":"")+".");
+  else if(arrBad)add("bad","Arrivée sous les minimums VFR et aucun dégagement avec METAR en VFR ou MVFR trouvé près de l’arrivée.");
+  /* Performances du DA20 */
+  var P=LAST.pf,W=LAST.wb,Q=LAST.cl;
+  if(isDA&&P){
+    ["dep","arr"].forEach(function(w){
+      var I=P.out[w].I,o=P.out[w].o,nm=(w==="dep"?"Départ":"Arrivée")+(I.code?" "+I.code:"");
+      if(!I.code){add("info",nm+" : point hors aéroport, performances à saisir à la main.");return}
+      if(I.rh===null){add("warn",nm+" : piste inconnue, les distances sont calculées sans vent. Saisis la piste à l’étape 4.");return}
+      var ax=Math.abs(I.xw),lvl="ok",txt=nm+" piste "+I.rt+" : vent de face "+Math.round(I.hw)+" kt, traversier "+Math.round(ax)+" kt";
+      if(ax>20){lvl="bad";txt+=" (au-dessus du maximum démontré de 20 kt)"}
+      else if(ax>=15){lvl="warn";txt+=" (près du maximum démontré de 20 kt)"}
+      if(I.hw<-3){if(lvl==="ok")lvl="warn";txt+=", vent arrière"}
+      var d=null;
+      if(w==="dep"&&o.t&&!o.t.out)d=o.t.d50*P.marg*3.28084;
+      else if(w==="arr"&&o.l&&!o.l.out)d=o.l.d50*P.marg;
+      else if((o.t&&o.t.out)||(o.l&&o.l.out)){lvl="bad";txt+=", "+((o.t&&o.t.why)||(o.l&&o.l.why))}
+      if(d!==null){
+        txt+=", "+(w==="dep"?"décollage":"atterrissage")+" "+sp(Math.round(d))+" ft avec marge";
+        if(I.len!==null){
+          txt+=" pour "+sp(Math.round(I.len))+" ft de piste";
+          if(d>I.len){lvl="bad";txt+=" : insuffisant"}
+          else if(d>0.75*I.len&&lvl==="ok"){lvl="warn";txt+=" : marge faible"}
+        }
+      }
+      add(lvl,txt+".");
+    });
+  }
+  if(isDA){
+    if(!W||W.missing)add("warn","Masse et centrage : entre la masse à vide et le moment à vide de l’avion (étape Charge).");
+    else{
+      var c1=W.conds[1];
+      add(W.ok&&!W.msgs.length?"ok":"bad","Masse et centrage : décollage "+Math.round(c1.w)+" lb, CG "+fr(c1.arm.toFixed(2))+" po — "+(W.ok?"dans l’enveloppe":"HORS LIMITES")+(W.msgs.length?". "+W.msgs.join(" "):"")+".");
+    }
+    if(Q&&Q.climb&&Q.climb.r){
+      var R=Q.climb.r;
+      if(R.ceil)add("bad","Montée : l’altitude de croisière de "+sp(Math.round(Q.climb.alt))+" ft n’est pas atteignable dans les conditions du départ.");
+      else if(!R.zero)add("ok","Montée à "+sp(Math.round(Q.climb.alt))+" ft : "+Math.round(R.t)+" min, "+fr(R.d.toFixed(1))+" NM.");
+    }
+  }
+  /* Carburant */
+  var mmin=C.margin/S.burn*60;
+  if(C.margin<0)add("bad","Carburant : il manque "+(-C.margin).toFixed(1)+" gal pour garder la réserve de "+C.resMin+" min.");
+  else add(mmin<20?"warn":"ok","Carburant : "+S.fuel.toFixed(1)+" gal à bord, "+C.req.toFixed(1)+" requis avec la réserve de "+C.resMin+" min, soit "+Math.round(mmin)+" min de marge.");
+  if(C.legs.some(function(l){return l.w.bad}))add("bad","Le vent saisi est trop fort sur au moins un tronçon pour tenir la route.");
+  /* Jour et nuit */
+  if(C.RI.night)add("warn","Vol de nuit ("+(C.RI.why==="depnight"?"départ":"arrivée")+" après la fin du crépuscule civil) : réserve portée à 45 min. Vérifie l’équipement de l’avion et tes qualifications.");
+  else if(C.RI.why==="nodep")add("info","Entre la date et l’heure de départ pour vérifier jour ou nuit, l’heure d’arrivée et le TAF à l’heure du vol.");
+  /* Vent */
+  if(S.windAuto&&S.windMan!==true&&S.ws>0)add("info","Vent de la route : "+deg(S.wd)+" / "+S.ws+" kt, calculé à partir des vents de surface. Compare avec les vents en altitude (GFA, prévisions de vents) avant le vol.");
+  var mx=0;it.forEach(function(x){mx=Math.max(mx,x.l==="bad"?2:(x.l==="warn"?1:0))});
+  var head=mx===2?"À régler avant le départ":(mx===1?"À vérifier avant le départ":"Aucun point bloquant détecté");
+  LAST.vd={head:head,lvl:mx,items:it};
+  var h="<div class=\"vdh "+(mx===2?"bad":(mx===1?"warn":"ok"))+"\">"+esc(head)+"</div>";
+  it.forEach(function(x){h+="<div class=\"vdi\"><span class=\"vdd "+x.l+"\"></span><span>"+esc(x.t)+"</span></div>"});
+  h+="<p class=\"note\">Catégories de vol à vue approximatives (visibilité et plafond) : les minimums du RAC dépendent de l’espace aérien. Aide à la préparation seulement : la décision revient au commandant de bord.</p>";
+  box.innerHTML=h;
+  var bar=$("vdBar"),nb=it.filter(function(x){return x.l==="bad"}).length,nw=it.filter(function(x){return x.l==="warn"}).length;
+  bar.hidden=false;bar.className="vdbar "+(mx===2?"bad":(mx===1?"warn":"ok"));
+  bar.textContent=head+(nb?" · "+nb+" problème"+(nb>1?"s":""):"")+(nw?" · "+nw+" à vérifier":"")+" — voir le verdict";
+}
+$("vdBar").onclick=function(){showStep(5)};
+function vdText(){
+  var V=LAST.vd,L=[];
+  if(!V)return L;
+  L.push("Verdict de préparation : "+V.head);
+  V.items.forEach(function(x){L.push((x.l==="bad"?"[PROBLÈME] ":(x.l==="warn"?"[À VÉRIFIER] ":""))+x.t)});
+  return L;
+}
+
 function fmtMin(m){return m==null?"--":clock(m)}
 function updateResUi(C){
   var RI=C.RI,msg="",nn="";
@@ -2223,7 +2604,11 @@ function updateResUi(C){
 function refresh(){
   var C=compute();
   updateResUi(C);
-  renderSummary(C);renderLegs(C);renderLegWinds(C);drawRoute(C);pfRender(C);clRender(C);buildPrint(C);save();
+  renderSummary(C);renderLegs(C);renderLegWinds(C);drawRoute(C);pfRender(C);clRender(C);buildVerdict(C);buildPrint(C);save();
+  var wsig=S.date+"|"+S.dep+"|"+Math.round(C.tT*60);
+  if(WXLIST&&wsig!==lastWsig){lastWsig=wsig;renderWx(WXLIST)}
+  var sg=wxStations().join(",")+"|"+pfCode("dep")+"|"+pfCode("arr");
+  if(sg!==lastSig){lastSig=sg;scheduleAuto()}
 }
 loadSaved();
 if(!S.date||S.date<todayStr())S.date=todayStr();
