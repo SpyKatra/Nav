@@ -992,6 +992,11 @@ pre.code{font:11px "B612 Mono",monospace;background:var(--panel);border:1px soli
       <h2>Briefing officiel</h2>
       <p class="note" style="margin-top:0">Plan Vol lit les METAR et les TAF, et les vents en altitude viennent d’un modèle numérique, pas du produit officiel. Complète avec les cartes GFA, SIGMET, AIRMET, PIREP, radar et satellite. Plan Vol ne lit pas les NOTAM : consulte-les dans le service de planification de vol de NAV CANADA.</p>
       <p class="note" id="notamNote"></p>
+      <div class="tools" style="margin:10px 0">
+        <button class="btn on" id="cfpsCopy" type="button">Copier la route pour NAV CANADA</button>
+      </div>
+      <p class="note" id="cfpsMsg" hidden></p>
+      <textarea id="cfpsOut" readonly hidden aria-label="Données à saisir dans le service de NAV CANADA" style="min-height:190px;margin-bottom:10px"></textarea>
       <div class="list">
         <a class="btn" style="display:block;text-align:center;text-decoration:none" href="https://flightplanning.navcanada.ca" target="_blank" rel="noopener">Site météo et NOTAM de NAV CANADA</a>
         <a class="btn" style="display:block;text-align:center;text-decoration:none" href="tel:+18669927433">Briefing du FIC : 1-866-WXBRIEF</a>
@@ -2849,8 +2854,7 @@ function buildVerdict(C){
   }else if(S.pts.length>1)add("info","Vents en altitude non disponibles : les calculs des tronçons utilisent le vent de surface.");
   /* NOTAM */
   G="notam";
-  var nst=wxStations().slice(0,8);if(alts&&alts.length)nst.push(alts[0].k);
-  var ntxt=nst.join(" ");
+  var ntxt=notamList(C).join(" ");
   add("info","NOTAM : à consulter avant le vol pour "+(ntxt||"la route")+" dans le service de planification de vol de NAV CANADA. Plan Vol ne lit pas les NOTAM.");
   $("notamNote").textContent=ntxt?"Aérodromes à saisir pour les NOTAM : "+ntxt+".":"";
   /* Vent */
@@ -3507,6 +3511,41 @@ $("ck").addEventListener("change",function(e){
 document.addEventListener("click",function(e){
   var b=e.target.closest("button[data-go]");if(b)showStep(+b.getAttribute("data-go"));
 });
+
+
+/* Données à saisir dans le service de NAV CANADA (NOTAM, météo, briefing) */
+function notamList(C){
+  var out=[];
+  function add(k){if(k&&out.indexOf(k)<0)out.push(k)}
+  S.pts.forEach(function(p){var k=(p.n||"").toUpperCase();if(APT[k])add(k)});
+  if(C&&C.alt)add(C.alt.code);
+  wxStations().forEach(add);
+  return out.slice(0,10);
+}
+function utcStr(ms){var d=new Date(ms);return d.getUTCFullYear()+"-"+p2(d.getUTCMonth()+1)+"-"+p2(d.getUTCDate())+" "+p2(d.getUTCHours())+p2(d.getUTCMinutes())+" UTC"}
+function cfpsText(){
+  if(S.pts.length<2)return "";
+  var C=compute(),ft=flightTimes(C),alt=cruiseAlt(),L=[];
+  var route=S.pts.map(function(p){var k=(p.n||"").toUpperCase();return APT[k]?k:icaoCoord(p.la,p.lo)}).join(" DCT ");
+  L.push("DONNÉES POUR LE SERVICE DE PLANIFICATION DE VOL DE NAV CANADA");
+  L.push("(Aide-mémoire : Plan Vol ne dépose rien et ne remplace pas le briefing officiel du FIC ou du service en ligne.)");
+  L.push("Route : "+route);
+  L.push("Départ : "+S.pts[0].n+(ft?", "+utcStr(ft.etd)+" ("+clock(depMin())+" heure locale)":", heure à entrer"));
+  L.push("Arrivée : "+S.pts[S.pts.length-1].n+(ft?", environ "+utcStr(ft.etd+C.tT*3600000):""));
+  L.push("Durée estimée : "+hhmmStr(C.tT)+" ("+hm(C.tT)+")");
+  L.push("Règles de vol : VFR, altitude A"+("000"+Math.round(alt/100)).slice(-3)+" ("+sp(Math.round(alt))+" ft), vitesse vraie N"+("000"+Math.round(S.cruise)).slice(-4)+" kt");
+  L.push("Dégagement : "+(C.alt?C.alt.code:"NIL"));
+  L.push("Aérodromes pour les NOTAM et la météo : "+notamList(C).join(" "));
+  L.push("Aéronef : "+AIRCRAFT[S.ac].n+((S.fp&&S.fp.reg)?" "+S.fp.reg:""));
+  return L.join("\n");
+}
+$("cfpsCopy").onclick=function(){
+  var txt=cfpsText(),m=$("cfpsMsg"),o=$("cfpsOut");
+  if(!txt){m.textContent="Entre un départ et une arrivée à l’étape Vol.";m.hidden=false;return}
+  o.value=txt;
+  function manual(){o.hidden=false;o.focus();o.select();m.textContent="Copie automatique impossible. Le texte est sélectionné : copie-le à la main.";m.hidden=false}
+  try{if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(txt).then(function(){m.textContent="Copié. Colle-le ou recopie les champs dans le service de NAV CANADA.";m.hidden=false;o.hidden=false},manual);else manual()}catch(e){manual()}
+};
 
 function fmtMin(m){return m==null?"--":clock(m)}
 function updateResUi(C){
