@@ -676,7 +676,7 @@ box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:en
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0b141c;--panel:#13222e;--ink:#e8eef2;--mute:#8fa3b2;--line:#27394a;--amber:#ffb000;--cyan:#5fd0e8;--bad:#ff6b5e;--ok:#5fe08a;--pinink:#111111;--legbg:rgba(19,34,46,.93);--field:#0f1c26;color-scheme:dark}}
 :root[data-theme="dark"]{--bg:#0b141c;--panel:#13222e;--ink:#e8eef2;--mute:#8fa3b2;--line:#27394a;--amber:#ffb000;--cyan:#5fd0e8;--bad:#ff6b5e;--ok:#5fe08a;--pinink:#111111;--legbg:rgba(19,34,46,.93);--field:#0f1c26;color-scheme:dark}
 *{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--ink);font-family:"B612",system-ui,sans-serif;line-height:1.4;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:16px}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"B612",system-ui,sans-serif;line-height:1.4;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-top:12px;padding-bottom:calc(84px + env(safe-area-inset-bottom,0px))}
 main{max-width:760px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
 h1{font-size:22px;margin:0}
 h2{font-size:16px;margin:0 0 8px}
@@ -687,18 +687,14 @@ label{display:block;font-size:12px;color:var(--mute);margin-bottom:2px}
 select,input[type=tel],input[type=text],input[type=number],input[type=time],input[type=date]{width:100%;min-width:0;font:inherit;font-family:"B612 Mono",ui-monospace,monospace;font-size:16px;padding:9px 10px;border-radius:8px;border:1px solid var(--line);background:var(--field);color:var(--ink)}
 input:disabled{opacity:.6}
 input:focus-visible,button:focus-visible,summary:focus-visible{outline:2px solid var(--cyan);outline-offset:2px}
-.steps{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:4px}
-.steps button{font:inherit;font-size:12px;color:var(--mute);background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:8px 2px;cursor:pointer;line-height:1.2}
-.steps button b{display:block;font-family:"B612 Mono",monospace;font-size:15px;color:var(--ink)}
-.steps button[aria-current="step"]{border:2px solid var(--amber);padding:7px 1px;color:var(--ink);font-weight:700}
 .stepnav{display:flex;gap:8px}
 .stepnav .btn{flex:1;padding:12px;font-size:16px}
 .stepnav .btn.go{background:var(--amber);color:var(--pinink);border-color:var(--amber);font-weight:700}
-.ac{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin-bottom:12px}
-.ac button{text-align:left;background:var(--field);color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:10px;font:inherit;cursor:pointer}
+.ac{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+.ac button{text-align:left;background:var(--field);color:var(--ink);border:1px solid var(--line);border-radius:999px;padding:8px 14px;font:inherit;cursor:pointer}
 .ac button b{display:block;font-size:14px}
-.ac button span{font-size:12px;color:var(--mute)}
-.ac button[aria-pressed="true"]{border:2px solid var(--amber);padding:9px}
+.ac button span{display:none}
+.ac button[aria-pressed="true"]{border:2px solid var(--amber);padding:7px 13px;font-weight:700}
 .fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px}
 .btn{font:inherit;font-size:14px;color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:8px 12px;cursor:pointer}
 .btn:disabled{opacity:.4;cursor:default}
@@ -710,14 +706,36 @@ input:focus-visible,button:focus-visible,summary:focus-visible{outline:2px solid
 .res button{text-align:left;font:inherit;font-size:14px;color:var(--ink);background:var(--field);border:1px solid var(--line);border-radius:8px;padding:8px 10px;cursor:pointer}
 .res button b{font-family:"B612 Mono",monospace;color:var(--cyan)}
 .res button span{color:var(--mute);font-size:12px}
-#map{height:min(56vh,520px);min-height:320px;border-radius:10px;border:1px solid var(--line);background:#dfe7ec;z-index:0}
+#map{height:clamp(240px,36vh,360px);border-radius:10px;border:1px solid var(--line);background:#dfe7ec;z-index:0}
 #map.adding{cursor:crosshair}
+#map.tall{height:min(72vh,600px)}
 .note{font-size:13px;color:var(--mute);margin:8px 0 0}
 .note.bad{color:var(--bad)}
 .chip{display:inline-flex;gap:6px;align-items:center;flex-wrap:wrap;padding:4px 8px;border:1px solid var(--line);border-radius:8px;margin:3px 4px 3px 0;font-size:13px}
 .chip .btn{padding:2px 8px;font-size:12px}
-.vdbar{display:block;width:100%;text-align:left;margin:8px 0 0;padding:9px 12px;border-radius:8px;border:1px solid var(--line);background:var(--panel);color:var(--ink);font:600 14px/1.3 inherit;cursor:pointer}
+.vdbar{position:sticky;top:0;z-index:40;display:flex;flex-wrap:wrap;align-items:center;gap:2px 10px;width:100%;text-align:left;margin:0;padding:8px 12px;border-radius:10px;border:2px solid var(--line);background:var(--panel);color:var(--ink);font:600 15px/1.3 "B612",system-ui,sans-serif;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.12)}
 .vdbar.ok{border-color:var(--ok)}.vdbar.warn{border-color:var(--amber)}.vdbar.bad{border-color:var(--bad)}
+.vdbar .r{font-family:"B612 Mono",ui-monospace,monospace;font-weight:700}
+.vdbar .m{color:var(--mute);font-size:13px;font-weight:400}
+.pill{margin-left:auto;padding:2px 10px;border-radius:12px;font-size:13px;font-weight:700;color:var(--pinink);background:var(--mute);white-space:nowrap}
+.pill.ok{background:var(--ok)}.pill.warn{background:var(--amber)}.pill.bad{background:var(--bad)}
+.steps{position:fixed;left:0;right:0;bottom:0;z-index:50;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:2px;background:var(--panel);border-top:1px solid var(--line);padding:6px max(6px,env(safe-area-inset-left,0px)) calc(6px + env(safe-area-inset-bottom,0px)) max(6px,env(safe-area-inset-right,0px));box-shadow:0 -2px 10px rgba(0,0,0,.1)}
+.steps button{font:inherit;font-size:12px;color:var(--mute);background:transparent;border:0;border-top:3px solid transparent;border-radius:6px;padding:5px 2px 3px;cursor:pointer;line-height:1.2;min-height:50px}
+.steps button b{display:inline-flex;align-items:center;gap:3px;font-family:"B612 Mono",monospace;font-size:16px;color:var(--ink)}
+.steps button[aria-current="step"]{border-top-color:var(--amber);color:var(--ink);font-weight:700;background:var(--field)}
+.dot{display:inline-flex;align-items:center;justify-content:center;width:15px;height:15px;border-radius:50%;font:700 10px/1 "B612",sans-serif;font-style:normal;color:var(--pinink);background:var(--line)}
+.dot.ok{background:var(--ok)}.dot.warn{background:var(--amber)}.dot.bad{background:var(--bad)}.dot.todo{background:var(--line);color:var(--mute)}
+.step{display:flex;flex-direction:column;gap:16px}
+.hdr{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.rt{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);gap:8px;align-items:end}
+.rt .btn{height:42px;padding:0 12px;font-size:18px}
+.chips{display:flex;flex-wrap:wrap}
+.chips .chip{background:var(--field)}
+.dcard>summary{cursor:pointer;font-size:16px;font-weight:700}
+.dcard[open]>summary{margin-bottom:6px}
+.lnk{flex:0 0 auto;margin-left:auto;font:inherit;font-size:13px;font-weight:700;color:var(--cyan);background:transparent;border:1px solid var(--line);border-radius:8px;padding:2px 8px;cursor:pointer;white-space:nowrap}
+.ckm{cursor:pointer;align-items:center}
+.ckm input{flex:0 0 22px;width:22px;height:22px}
 .vdh{font-weight:700;font-size:16px;padding:8px 12px;border-radius:8px;margin-bottom:6px}
 .vdh.ok{background:rgba(27,122,58,.14);color:var(--ok)}.vdh.warn{background:rgba(168,93,0,.16);color:var(--amber)}.vdh.bad{background:rgba(179,38,30,.14);color:var(--bad)}
 .vdi{display:flex;gap:10px;align-items:flex-start;padding:7px 0;border-top:1px solid var(--line);font-size:14px;line-height:1.35}
@@ -746,6 +764,10 @@ input:focus-visible,button:focus-visible,summary:focus-visible{outline:2px solid
 .lg{display:grid;grid-template-columns:repeat(auto-fit,minmax(105px,1fr));gap:6px}
 .lg .cell{padding:6px 8px}
 .lg .cell .v{font-size:16px}
+.cmp{grid-template-columns:repeat(auto-fit,minmax(96px,1fr))}
+.cmp .cell{padding:4px 7px}
+.cmp .cell .l{font-size:11px}
+.cmp .cell .v{font-size:13px;line-height:1.25}
 .lwrow{display:grid;grid-template-columns:minmax(0,1.3fr) 1fr 1fr;gap:8px;align-items:end}
 .lwrow .t{font-size:14px;font-weight:700;padding-bottom:10px}
 .warnbox{border-left:3px solid var(--amber);padding:8px 12px;font-size:13px;color:var(--mute);background:var(--panel)}
@@ -779,55 +801,107 @@ pre.code{font:11px "B612 Mono",monospace;background:var(--panel);border:1px soli
 </style>
 
 <main>
-  <header>
-    <h1>Plan Vol</h1>
-    <p class="sub">Prépare ton vol en cinq étapes.</p>
+  <header class="hdr">
+    <div><h1>Plan Vol</h1><p class="sub">Préparation de vol VFR</p></div>
+    <button class="btn" id="newFlight" type="button">Nouveau vol</button>
   </header>
   <p class="warnbox" id="offBanner" hidden>Hors ligne : la météo et les fonds de carte non enregistrés ne sont pas disponibles. Les calculs, la carte de base et le PDF fonctionnent.</p>
 
+  <button type="button" class="vdbar" id="vdBar" aria-label="Statut du vol : ouvrir le briefing"></button>
+
   <nav class="steps" id="steps" aria-label="Étapes">
-    <button type="button" data-s="1"><b>1</b>Avion</button>
-    <button type="button" data-s="2"><b>2</b>Route</button>
-    <button type="button" data-s="3"><b>3</b>Conditions</button>
-    <button type="button" data-s="4"><b>4</b>Charge</button>
-    <button type="button" data-s="5"><b>5</b>Résultat</button>
+    <button type="button" data-s="1"><b>1<i class="dot todo"></i></b>Vol</button>
+    <button type="button" data-s="2"><b>2<i class="dot todo"></i></b>Météo</button>
+    <button type="button" data-s="3"><b>3<i class="dot todo"></i></b>Charge</button>
+    <button type="button" data-s="4"><b>4<i class="dot todo"></i></b>Perfs</button>
+    <button type="button" data-s="5"><b>5<i class="dot todo"></i></b>Briefing</button>
   </nav>
-  <button type="button" class="vdbar" id="vdBar" hidden></button>
 
-  <section class="card step" data-step="1">
-    <h2>Avion et carburant</h2>
-    <div class="ac" id="acList" role="group" aria-label="Avion"></div>
-    <div id="cruiseBox" hidden style="margin-bottom:12px">
-      <label for="cruiseSel">Régime de croisière (POH du DA20-C1)</label>
-      <select id="cruiseSel"></select>
-      <p class="note">Valeurs du tableau de croisière du POH (section 5.3.10, révision 27 du 12 février 2013), à température standard. Elles remplissent la vitesse vraie et la consommation ci-dessous. Le POH indique aussi une option de réservoir à 20 gal utilisables : change le carburant à bord si c’est ton cas.</p>
-    </div>
-    <div class="fields">
-      <div><label for="cruise">Vitesse vraie (kt)</label><input id="cruise" type="number" inputmode="decimal"></div>
-      <div><label for="burn">Consommation (gal US/h)</label><input id="burn" type="number" inputmode="decimal" step="0.1"></div>
-      <div><label for="fuel">Carburant à bord (gal US)</label><input id="fuel" type="number" inputmode="decimal" step="0.1"></div>
-      <div><label for="taxi">Roulage et montée (gal US)</label><input id="taxi" type="number" inputmode="decimal" step="0.1"></div>
-      <div><label for="res">Réserve (min)</label><input id="res" type="number" inputmode="numeric"><label class="chk" style="margin-top:6px"><input type="checkbox" id="resAuto" checked> Automatique</label></div>
-    </div>
-    <p class="note" id="resNote">Réserve automatique : 30 min le jour, 45 min la nuit.</p>
-    <p class="note">Les valeurs de chaque avion sont approximatives : remplace-les par celles de ton manuel de vol.</p>
-  </section>
-
-  <div class="step" data-step="2" hidden>
+  <!-- ÉTAPE 1 : VOL -->
+  <div class="step" data-step="1">
     <section class="card">
-      <h2>Carte</h2>
-      <div class="tools">
-        <button class="btn on" id="addMode" type="button" aria-pressed="true">Toucher la carte ajoute un point</button>
-        <button class="btn" id="fit" type="button">Cadrer la route</button>
-        <button class="btn" id="tileSave" type="button">Enregistrer cette zone hors ligne</button>
+      <h2>Avion</h2>
+      <div class="ac" id="acList" role="group" aria-label="Avion"></div>
+      <div id="m_acs" class="chips" aria-label="Mes avions enregistrés"></div>
+      <div id="cruiseBox" hidden style="margin-top:10px">
+        <label for="cruiseSel">Régime de croisière (POH du DA20-C1)</label>
+        <select id="cruiseSel"></select>
       </div>
-      <p class="note" id="tileMsg" hidden></p>
-      <div id="map" class="adding" role="application" aria-label="Carte de la route"></div>
-      <p class="note bad" id="mapNote" hidden>Le fond de carte n’est pas disponible dans cette page. Les points, les aéroports et les calculs fonctionnent. Pour voir la vraie carte, ouvre le fichier mis en ligne en https.</p>
-      <p class="note">Les ronds bleus sont des aéroports : touche-les pour les ajouter. Touche un tronçon pour y insérer un point. Glisse un numéro pour le déplacer.</p>
       <details class="oaip">
-        <summary>Couches aéronautiques (OpenAIP)</summary>
-        <p class="note">Affiche les espaces aériens, les aéroports et les aides à la navigation en données ouvertes par-dessus la carte, à partir du zoom 7. Il faut une clé gratuite : crée un compte sur <a href="https://www.openaip.net" target="_blank" rel="noopener">openaip.net</a>, ouvre « API Clients » dans ton profil, crée un client et copie le jeton. La clé reste dans ton navigateur.</p>
+        <summary>Vitesse, consommation et réserve</summary>
+        <div class="fields">
+          <div><label for="cruise">Vitesse vraie (kt)</label><input id="cruise" type="number" inputmode="decimal"></div>
+          <div><label for="burn">Consommation (gal US/h)</label><input id="burn" type="number" inputmode="decimal" step="0.1"></div>
+          <div><label for="res">Réserve (min)</label><input id="res" type="number" inputmode="numeric"><label class="chk" style="margin-top:6px"><input type="checkbox" id="resAuto" checked> Automatique</label></div>
+        </div>
+        <p class="note" id="resNote">Réserve automatique : 30 min le jour, 45 min la nuit.</p>
+        <p class="note">Régimes de croisière : tableau du POH du DA20-C1 (section 5.3.10, révision 27 du 12 février 2013), à température standard. Les valeurs de chaque avion sont approximatives : remplace-les par celles de ton manuel de vol.</p>
+      </details>
+    </section>
+
+    <section class="card">
+      <h2>Quand</h2>
+      <div class="fields">
+        <div><label for="fdate">Date du vol</label><input id="fdate" type="date"></div>
+        <div><label for="dep">Heure de départ (locale)</label><input id="dep" type="time"></div>
+      </div>
+      <div class="tools" id="quickT" style="margin:8px 0 0">
+        <button class="btn" type="button" data-qd="0">Aujourd’hui</button>
+        <button class="btn" type="button" data-qd="1">Demain</button>
+        <button class="btn" type="button" data-qt="0">Maintenant</button>
+        <button class="btn" type="button" data-qt="60">Dans 1 h</button>
+        <button class="btn" type="button" data-qt="120">Dans 2 h</button>
+      </div>
+      <p class="note" id="nightNote"></p>
+      <p class="note" id="sunNote"></p>
+    </section>
+
+    <section class="card">
+      <h2>Route</h2>
+      <div class="rt">
+        <div><label for="rtDep">Départ</label><input id="rtDep" type="text" placeholder="CYQB ou Québec" autocapitalize="characters" autocomplete="off" autocorrect="off" spellcheck="false"></div>
+        <button class="btn" id="rtSwap" type="button" aria-label="Inverser départ et arrivée">⇄</button>
+        <div><label for="rtArr">Arrivée</label><input id="rtArr" type="text" placeholder="CYHU ou Saint-Hubert" autocapitalize="characters" autocomplete="off" autocorrect="off" spellcheck="false"></div>
+      </div>
+      <div class="res" id="rtRes"></div>
+      <p class="note bad" id="rtErr" hidden></p>
+      <div id="viaBox" style="margin-top:8px"></div>
+      <div class="tools" style="margin:8px 0 0">
+        <button class="btn" id="viaAdd" type="button">＋ Point de passage</button>
+        <button class="btn" id="rtRound" type="button">Ajouter le vol retour</button>
+      </div>
+      <p class="note" id="routeSum"></p>
+
+      <div class="tools" style="margin:12px 0 6px">
+        <button class="btn" id="addMode" type="button" aria-pressed="false">＋ Ajouter par la carte</button>
+        <button class="btn" id="fit" type="button">Cadrer la route</button>
+        <button class="btn" id="mapBig" type="button" aria-pressed="false">Agrandir la carte</button>
+      </div>
+      <div id="map" role="application" aria-label="Carte de la route"></div>
+      <p class="note bad" id="mapNote" hidden>Le fond de carte n’est pas disponible dans cette page. Les points, les aéroports et les calculs fonctionnent. Pour voir la vraie carte, ouvre le fichier mis en ligne en https.</p>
+      <p class="note">Ronds bleus : aéroports, touche-en un pour le placer comme départ, arrivée ou point de passage. Glisse un numéro pour déplacer un point. Avec « Ajouter par la carte », chaque toucher de la carte ajoute un point.</p>
+
+      <details class="oaip" id="ptsBox">
+        <summary>Points de passage : ajouter, ordonner, supprimer</summary>
+        <div class="addrow">
+          <div><label for="addIn">Ajouter avant l’arrivée : nom, ville, code ou coordonnées</label><input id="addIn" type="text" placeholder="Québec, CYRQ ou 46.35/-72.68" autocomplete="off" autocorrect="off" spellcheck="false"></div>
+          <button class="btn" id="addBtn" type="button" style="align-self:end;height:42px">Ajouter</button>
+        </div>
+        <div class="res" id="addRes"></div>
+        <p class="note bad" id="addErr" hidden></p>
+        <p class="note">Liste de plus de 500 aéroports du Canada et du nord des États-Unis (surtout les aéroports moyens et grands). Les petits aérodromes n’y sont pas : ajoute-les par coordonnées ou en touchant la carte.</p>
+        <div class="tools" style="margin-top:10px">
+          <button class="btn" id="rev" type="button">Inverser la route</button>
+          <button class="btn" id="clear" type="button">Tout effacer</button>
+        </div>
+        <div class="list" id="pts"></div>
+      </details>
+
+      <details class="oaip">
+        <summary>Carte hors ligne et couches aéronautiques</summary>
+        <div class="tools"><button class="btn" id="tileSave" type="button">Enregistrer cette zone hors ligne</button></div>
+        <p class="note" id="tileMsg" hidden></p>
+        <p class="note">Couches OpenAIP : espaces aériens, aéroports et aides à la navigation en données ouvertes par-dessus la carte, à partir du zoom 7. Il faut une clé gratuite : crée un compte sur <a href="https://www.openaip.net" target="_blank" rel="noopener">openaip.net</a>, ouvre « API Clients » dans ton profil, crée un client et copie le jeton. La clé reste dans ton navigateur.</p>
         <label for="oaipKey">Clé OpenAIP</label>
         <input id="oaipKey" type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Colle ton jeton ici">
         <div class="tools" style="margin-top:8px;margin-bottom:0">
@@ -839,87 +913,102 @@ pre.code{font:11px "B612 Mono",monospace;background:var(--panel);border:1px soli
       </details>
     </section>
 
-    <section class="card" style="margin-top:16px">
-      <h2>Ajouter un point</h2>
+    <section class="card">
+      <h2>Mes vols</h2>
+      <p class="note" style="margin-top:0">Enregistre ce vol pour le rouvrir plus tard : route, avion, carburant et charge. La date et l’heure sont à remettre.</p>
       <div class="addrow">
-        <div><label for="addIn">Nom, ville ou code d’aéroport, ou coordonnées</label><input id="addIn" type="text" placeholder="Québec, CYRQ ou 46.35/-72.68" autocomplete="off" autocorrect="off" spellcheck="false"></div>
-        <button class="btn" id="addBtn" type="button" style="align-self:end;height:42px">Ajouter</button>
+        <div><label for="fl_name">Nom du vol (facultatif)</label><input id="fl_name" type="text" placeholder="CYQB → CYHU" autocomplete="off"></div>
+        <button class="btn on" id="fl_save" type="button" style="align-self:end;height:42px">Enregistrer</button>
       </div>
-      <div class="res" id="addRes"></div>
-      <p class="note bad" id="addErr" hidden></p>
-      <p class="note">Liste de plus de 500 aéroports du Canada et du nord des États-Unis (surtout les aéroports moyens et grands). Les petits aérodromes n’y sont pas : ajoute-les par coordonnées ou en touchant la carte.</p>
-    </section>
-
-    <section class="card" style="margin-top:16px">
-      <h2>Points de passage</h2>
-      <div class="tools">
-        <button class="btn" id="rev" type="button">Inverser la route</button>
-        <button class="btn" id="clear" type="button">Tout effacer</button>
-      </div>
-      <div class="list" id="pts"></div>
+      <div id="fl_list" style="margin-top:8px"></div>
+      <p class="note" id="fl_msg" hidden></p>
     </section>
   </div>
 
-  <section class="card step" data-step="3" hidden>
-    <h2>Conditions du vol</h2>
-    <div class="fields">
-      <div><label for="fdate">Date du vol</label><input id="fdate" type="date"></div>
-      <div><label for="dep">Heure de départ</label><input id="dep" type="time"></div>
-      <div><label for="wd">Vent venant de (° vrais)</label><input id="wd" type="number" inputmode="decimal"></div>
-      <div><label for="ws">Vitesse du vent (kt)</label><input id="ws" type="number" inputmode="decimal"></div>
-      <div><label for="decl">Déclinaison (° ouest)</label><input id="decl" type="number" inputmode="decimal" step="0.5"></div>
-    </div>
-    <p class="note" id="nightNote"></p>
-    <p class="note" id="sunNote"></p>
-    <p class="note">Ce vent s’applique à toute la route. Pour un tronçon différent, remplis ses champs ci-dessous. Laisse vide pour garder le vent général.</p>
-    <h2 style="margin-top:14px">Vent par tronçon (facultatif)</h2>
-    <div class="list" id="lw"></div>
+  <!-- ÉTAPE 2 : MÉTÉO -->
+  <div class="step" data-step="2" hidden>
+    <section class="card">
+      <div class="wxh"><h2 style="margin:0">Météo du vol</h2><button class="btn on" id="wxGo" type="button">Actualiser</button></div>
+      <p class="note" id="wxSt" style="margin-top:0"></p>
+      <p class="note" id="autoMsg"></p>
+      <div class="list" id="wx" style="margin-top:8px"></div>
+    </section>
 
-    <h2 style="margin-top:18px">Vents en altitude (prévision de modèle)</h2>
-    <p class="note" style="margin-top:0">Calculés pour chaque tronçon, à l’altitude ci-dessous et à l’heure du vol, puis utilisés dans les calculs à la place du vent de surface. Un vent que tu saisis toi-même pour un tronçon reste prioritaire.</p>
-    <div class="fields">
-      <div><label for="wa_alt">Altitude de croisière pour les vents (ft)</label><input id="wa_alt" type="number" inputmode="decimal" step="any"></div>
-    </div>
-    <label class="chk" style="margin-top:8px"><input type="checkbox" id="wa_on"> Utiliser ces vents dans les calculs des tronçons</label>
-    <p class="note" id="waSt"></p>
-    <div class="list" id="wa" style="margin-top:8px"></div>
+    <section class="card">
+      <h2>Vent et altitude de croisière</h2>
+      <p class="note" id="windLine" style="margin-top:0"></p>
+      <p class="note" id="altBest"></p>
+      <details class="oaip">
+        <summary>Vents en altitude, tronçon par tronçon</summary>
+        <p class="note">Prévision de modèle numérique, calculée pour chaque tronçon, à l’altitude ci-dessous et à l’heure du vol, puis utilisée dans les calculs à la place du vent de surface. Un vent saisi toi-même pour un tronçon reste prioritaire.</p>
+        <div class="fields">
+          <div><label for="wa_alt">Altitude de croisière pour les vents (ft)</label><input id="wa_alt" type="number" inputmode="decimal" step="any"></div>
+        </div>
+        <label class="chk" style="margin-top:8px"><input type="checkbox" id="wa_on"> Utiliser ces vents dans les calculs des tronçons</label>
+        <p class="note" id="waSt"></p>
+        <div class="list" id="wa" style="margin-top:8px"></div>
+      </details>
+      <details class="oaip">
+        <summary>Altitude de croisière conseillée</summary>
+        <p class="note">Compare des altitudes de croisière avec les vents du modèle et le tableau de croisière du manuel (DA20-C1).</p>
+        <div id="altAdv"></div>
+      </details>
+      <details class="oaip">
+        <summary>Vent manuel et déclinaison</summary>
+        <div class="fields">
+          <div><label for="wd">Vent venant de (° vrais)</label><input id="wd" type="number" inputmode="decimal"></div>
+          <div><label for="ws">Vitesse du vent (kt)</label><input id="ws" type="number" inputmode="decimal"></div>
+          <div><label for="decl">Déclinaison (° ouest)</label><input id="decl" type="number" inputmode="decimal" step="0.5"></div>
+        </div>
+        <p class="note">Ce vent s’applique à toute la route quand les vents en altitude manquent. Pour un tronçon différent, remplis ses champs ci-dessous. Laisse vide pour garder le vent général.</p>
+        <div class="list" id="lw"></div>
+      </details>
+    </section>
 
-    <h2 style="margin-top:18px">Altitude de croisière conseillée</h2>
-    <p class="note" style="margin-top:0">Compare des altitudes de croisière avec les vents du modèle et le tableau de croisière du manuel (DA20-C1).</p>
-    <div id="altAdv"></div>
+    <section class="card">
+      <h2>Dégagement et minimums</h2>
+      <p class="note" style="margin-top:0" id="altNote"></p>
+      <details class="oaip">
+        <summary>Choisir mon dégagement</summary>
+        <p class="note">Laisse vide pour que l’app propose l’aéroport le plus proche de l’arrivée dont le METAR est en VFR ou MVFR. Distance en ligne droite.</p>
+        <div class="fields">
+          <div><label for="altn">Aéroport de dégagement (code, facultatif)</label><input id="altn" type="text" placeholder="auto" autocapitalize="characters" autocomplete="off" autocorrect="off" spellcheck="false"></div>
+        </div>
+        <label class="chk" style="margin-top:8px"><input type="checkbox" id="altOn"> Ajouter le carburant du dégagement au carburant requis</label>
+      </details>
+      <details class="oaip">
+        <summary>Mes minimums personnels (facultatif)</summary>
+        <p class="note">Laisse vide pour ne pas en utiliser. Le verdict signale tout ce qui passe sous tes minimums : METAR, TAF, et vent traversier pour le DA20.</p>
+        <div class="fields">
+          <div><label for="pm_ceil">Plafond minimal (ft)</label><input id="pm_ceil" type="number" inputmode="decimal" step="any" min="0"></div>
+          <div><label for="pm_vis">Visibilité minimale (SM)</label><input id="pm_vis" type="number" inputmode="decimal" step="any" min="0"></div>
+          <div><label for="pm_xw">Vent traversier maximal (kt)</label><input id="pm_xw" type="number" inputmode="decimal" step="any" min="0"></div>
+          <div><label for="pm_gust">Rafales maximales (kt)</label><input id="pm_gust" type="number" inputmode="decimal" step="any" min="0"></div>
+        </div>
+      </details>
+    </section>
 
-    <h2 style="margin-top:18px">Météo des aéroports (METAR et TAF)</h2>
-    <p class="note" style="margin-top:0">La météo se charge toute seule dès que la route change. Source : NAV CANADA. Les stations sont les aéroports de ta route, et l’aéroport le plus proche (à 60 NM ou moins) pour les points hors aéroports. Jusqu’à 4 aéroports près de l’arrivée sont aussi vérifiés comme dégagements possibles.</p>
-    <label class="chk" style="margin-top:8px"><input type="checkbox" id="autoOn"> Remplir automatiquement les calculs avec la météo (température, calage, vent, piste)</label>
-    <p class="note" id="autoMsg"></p>
-    <div class="tools" style="margin-top:8px">
-      <button class="btn on" id="wxGo" type="button">Actualiser la météo</button>
-      <button class="btn" id="autoReset" type="button">Tout remettre en automatique</button>
-    </div>
-    <label for="wxExtra">Autres stations (codes séparés par des espaces)</label>
-    <input id="wxExtra" type="text" placeholder="CYMX CYSC" autocapitalize="characters" autocomplete="off" autocorrect="off" spellcheck="false">
-    <p class="note" id="wxSt"></p>
-    <div class="list" id="wx" style="margin-top:8px"></div>
-    <h2 style="margin-top:18px">Dégagement</h2>
-    <p class="note" style="margin-top:0">Laisse vide pour que l’app propose l’aéroport le plus proche de l’arrivée dont le METAR est en VFR ou MVFR. Distance en ligne droite.</p>
-    <div class="fields">
-      <div><label for="altn">Aéroport de dégagement (code, facultatif)</label><input id="altn" type="text" placeholder="auto" autocapitalize="characters" autocomplete="off" autocorrect="off" spellcheck="false"></div>
-    </div>
-    <label class="chk" style="margin-top:8px"><input type="checkbox" id="altOn"> Ajouter le carburant du dégagement au carburant requis</label>
-    <p class="note" id="altNote"></p>
+    <section class="card">
+      <h2>Briefing officiel</h2>
+      <p class="note" style="margin-top:0">Plan Vol lit les METAR et les TAF, et les vents en altitude viennent d’un modèle numérique, pas du produit officiel. Complète avec les cartes GFA, SIGMET, AIRMET, PIREP, radar et satellite. Plan Vol ne lit pas les NOTAM : consulte-les dans le service de planification de vol de NAV CANADA.</p>
+      <p class="note" id="notamNote"></p>
+      <div class="list">
+        <a class="btn" style="display:block;text-align:center;text-decoration:none" href="https://flightplanning.navcanada.ca" target="_blank" rel="noopener">Site météo et NOTAM de NAV CANADA</a>
+        <a class="btn" style="display:block;text-align:center;text-decoration:none" href="tel:+18669927433">Briefing du FIC : 1-866-WXBRIEF</a>
+        <a class="btn" style="display:block;text-align:center;text-decoration:none" href="tel:+18664663836">Québec, en français : 1-866-GOMÉTÉO</a>
+      </div>
+    </section>
 
-    <h2 style="margin-top:18px">Mes minimums personnels (facultatif)</h2>
-    <p class="note" style="margin-top:0">Laisse vide pour ne pas en utiliser. Le verdict signale tout ce qui passe sous tes minimums : METAR, TAF, et vent traversier pour le DA20.</p>
-    <div class="fields">
-      <div><label for="pm_ceil">Plafond minimal (ft)</label><input id="pm_ceil" type="number" inputmode="decimal" step="any" min="0"></div>
-      <div><label for="pm_vis">Visibilité minimale (SM)</label><input id="pm_vis" type="number" inputmode="decimal" step="any" min="0"></div>
-      <div><label for="pm_xw">Vent traversier maximal (kt)</label><input id="pm_xw" type="number" inputmode="decimal" step="any" min="0"></div>
-      <div><label for="pm_gust">Rafales maximales (kt)</label><input id="pm_gust" type="number" inputmode="decimal" step="any" min="0"></div>
-    </div>
-
-    <details class="oaip">
-      <summary>Si la météo ne s’affiche pas</summary>
-      <p class="note">Autre source : CheckWX, avec une clé gratuite (3 000 requêtes par jour) créée sur <span class="mono">checkwxapi.com</span>. Si elle est remplie, la page l’essaie en premier, puis revient à NAV CANADA en cas d’échec.</p>
+    <details class="card dcard">
+      <summary>Réglages de la météo</summary>
+      <label class="chk" style="margin-top:10px"><input type="checkbox" id="autoOn"> Remplir automatiquement les calculs avec la météo (température, calage, vent, piste)</label>
+      <div class="tools" style="margin-top:8px">
+        <button class="btn" id="autoReset" type="button">Tout remettre en automatique</button>
+      </div>
+      <p class="note" style="margin-top:0">La météo se charge toute seule dès que la route change. Source : NAV CANADA. Les stations sont les aéroports de ta route, et l’aéroport le plus proche (à 60 NM ou moins) pour les points hors aéroports. Jusqu’à 4 aéroports près de l’arrivée sont aussi vérifiés comme dégagements possibles.</p>
+      <label for="wxExtra">Autres stations (codes séparés par des espaces)</label>
+      <input id="wxExtra" type="text" placeholder="CYMX CYSC" autocapitalize="characters" autocomplete="off" autocorrect="off" spellcheck="false">
+      <p class="note" style="margin-top:14px">Si la météo ne s’affiche pas : autre source CheckWX, avec une clé gratuite (3 000 requêtes par jour) créée sur <span class="mono">checkwxapi.com</span>. Si elle est remplie, la page l’essaie en premier, puis revient à NAV CANADA en cas d’échec.</p>
       <label for="wxKey">Clé API CheckWX (facultatif)</label>
       <input id="wxKey" type="text" placeholder="Colle ta clé ici" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
       <p class="note" style="margin-top:14px">La page interroge NAV CANADA directement. Si le navigateur refuse, elle essaie des relais publics gratuits, qui voient les codes de stations demandés. Dans l’aperçu de claude.ai, aucune requête externe n’est permise : utilise la version hébergée.</p>
@@ -933,96 +1022,117 @@ pre.code{font:11px "B612 Mono",monospace;background:var(--panel);border:1px soli
       <label for="wxProxy" style="margin-top:8px">Adresse de ton relais (facultatif)</label>
       <input id="wxProxy" type="text" placeholder="https://mon-relais.workers.dev/?url=" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
     </details>
-  </section>
+  </div>
 
-  <div class="step" data-step="4" hidden>
+  <!-- ÉTAPE 3 : CHARGE -->
+  <div class="step" data-step="3" hidden>
     <section class="card">
+      <h2>Carburant</h2>
+      <div class="fields">
+        <div><label for="fuel">Carburant à bord (gal US)</label><input id="fuel" type="number" inputmode="decimal" step="0.1"></div>
+        <div><label for="taxi">Roulage et montée (gal US)</label><input id="taxi" type="number" inputmode="decimal" step="0.1"></div>
+      </div>
+      <div class="tools" id="fuelQuick" style="margin:8px 0 0">
+        <button class="btn" type="button" data-fq="full">Plein</button>
+        <button class="btn" type="button" data-fq="max" id="fq_max">Maximum selon le devis</button>
+        <button class="btn" type="button" data-fq="req">Juste le requis</button>
+      </div>
+      <div id="fuelSum" class="sum" style="margin-top:10px"></div>
+      <p class="note" id="fuelNote"></p>
+    </section>
+
+    <section class="card" id="wbCard">
       <h2>Masse et centrage</h2>
-      <p class="note" id="wbOther" hidden style="margin-top:0">Le devis de masse et centrage et les distances de décollage et d’atterrissage sont programmés avec le manuel de vol du Diamond DA20-C1. Choisis cet avion à l’étape 1 pour les utiliser.</p>
+      <p class="note" id="wbOther" hidden style="margin-top:0">Le devis de masse et centrage et les distances de décollage et d’atterrissage sont programmés avec le manuel de vol du Diamond DA20-C1. Choisis cet avion à l’étape Vol pour les utiliser.</p>
       <div id="wbBox">
-        <p class="note" style="margin-top:0">Limites, bras de levier et enveloppe : manuel de vol du DA20-C1. La masse à vide et son moment sont propres à ton avion : prends-les dans son rapport de masse et centrage à jour.</p>
-        <details class="oaip" style="margin-bottom:10px">
-          <summary>Mes avions et mes personnes (mémorisés sur cet appareil)</summary>
-          <p class="note">Enregistre la masse et le moment à vide de chaque avion (par immatriculation), puis charge-les en un clic. Fais de même pour le poids des personnes.</p>
+        <div id="m_ppl" class="chips" aria-label="Mes personnes enregistrées"></div>
+        <div class="fields" style="margin-top:8px">
+          <div><label for="wb_pil">Pilote (lb)</label><input id="wb_pil" type="number" inputmode="decimal" step="any"></div>
+          <div><label for="wb_pax">Passager (lb)</label><input id="wb_pax" type="number" inputmode="decimal" step="any"></div>
+          <div><label for="wb_bag">Bagages, compartiment (lb)</label><input id="wb_bag" type="number" inputmode="decimal" step="any"></div>
+          <div><label for="wb_ext">Bagages, extension (lb)</label><input id="wb_ext" type="number" inputmode="decimal" step="any"></div>
+          <div><label for="wb_ew">Masse à vide (lb)</label><input id="wb_ew" type="number" inputmode="decimal" step="any"></div>
+          <div><label for="wb_em">Moment à vide (po·lb)</label><input id="wb_em" type="number" inputmode="decimal" step="any"></div>
+        </div>
+        <p class="note">Limites, bras de levier et enveloppe : manuel de vol du DA20-C1. La masse à vide et son moment sont propres à ton avion : prends-les dans son rapport de masse et centrage à jour.</p>
+        <p class="note" id="wbFuel"></p>
+        <div id="wbOut" style="margin-top:8px"></div>
+        <details class="oaip">
+          <summary>Enregistrer mon avion ou une personne (mémorisé sur cet appareil)</summary>
+          <p class="note">Enregistre la masse et le moment à vide de ton avion (par immatriculation) : il apparaît à l’étape Vol, en un toucher. Fais de même pour le poids des personnes : elles apparaissent au-dessus des champs.</p>
           <label for="m_reg">Immatriculation de l’avion</label>
           <input id="m_reg" type="text" placeholder="C-GXXX" autocapitalize="characters" autocomplete="off" autocorrect="off" spellcheck="false">
-          <div class="tools" style="margin-top:8px"><button class="btn" id="m_acadd" type="button">Enregistrer avec la masse et le moment à vide ci-dessous</button></div>
-          <div id="m_acs"></div>
+          <div class="tools" style="margin-top:8px"><button class="btn" id="m_acadd" type="button">Enregistrer avec la masse et le moment à vide ci-dessus</button></div>
           <div class="fields" style="margin-top:12px">
             <div><label for="m_pn">Nom</label><input id="m_pn" type="text" autocomplete="off"></div>
             <div><label for="m_pw">Poids (lb)</label><input id="m_pw" type="number" inputmode="decimal" step="any"></div>
           </div>
           <div class="tools" style="margin-top:8px"><button class="btn" id="m_padd" type="button">Enregistrer la personne</button></div>
-          <div id="m_ppl"></div>
           <p class="note" id="m_msg" hidden></p>
+          <div class="tools" style="margin-top:12px"><button class="btn" id="wbEx" type="button">Charger l’exemple du POH (pas ton avion)</button></div>
         </details>
-        <div class="fields">
-          <div><label for="wb_ew">Masse à vide (lb)</label><input id="wb_ew" type="number" inputmode="decimal" step="any"></div>
-          <div><label for="wb_em">Moment à vide (po·lb)</label><input id="wb_em" type="number" inputmode="decimal" step="any"></div>
-          <div><label for="wb_pil">Pilote (lb)</label><input id="wb_pil" type="number" inputmode="decimal" step="any"></div>
-          <div><label for="wb_pax">Passager (lb)</label><input id="wb_pax" type="number" inputmode="decimal" step="any"></div>
-          <div><label for="wb_bag">Bagages, compartiment (lb)</label><input id="wb_bag" type="number" inputmode="decimal" step="any"></div>
-          <div><label for="wb_ext">Bagages, extension (lb)</label><input id="wb_ext" type="number" inputmode="decimal" step="any"></div>
-        </div>
-        <div class="tools" style="margin-top:8px"><button class="btn" id="wbEx" type="button">Charger l’exemple du POH (pas ton avion)</button></div>
-        <p class="note" id="wbFuel"></p>
-        <div id="wbOut" style="margin-top:8px"></div>
       </div>
-    </section>
-    <section class="card" style="margin-top:16px" id="pfBox">
-      <h2>Décollage et atterrissage</h2>
-      <p class="note" style="margin-top:0">Distances lues sur les graphiques et le tableau du manuel de vol du DA20-C1 (piste en dur, plane, puissance maximale au décollage, volets en position T/O). Le vent se saisit en degrés magnétiques, comme à l’ATIS et à la tour.</p>
-      <div id="pfIn"></div>
-      <div class="fields" style="margin-top:10px">
-        <div><label for="pf_margin">Marge de sécurité (%)</label><input id="pf_margin" type="number" inputmode="decimal" step="any" min="0"></div>
-      </div>
-      <p class="note">La marge est un choix personnel, ce n’est pas une exigence du manuel de vol.</p>
-      <label class="chk" style="margin-top:8px"><input type="checkbox" id="pf_hw50"> Ne compter que 50 % du vent de face (prudent)</label>
-      <p class="note">Les distances sont lues par calcul sur les graphiques du manuel, avec une incertitude d’environ 5 %. En cas de doute, compare avec le graphique du manuel de vol.</p>
-      <div id="pfOut" style="margin-top:8px"></div>
-    </section>
-<section class="card" style="margin-top:16px" id="clBox">
-      <h2>Montée</h2>
-      <p class="note" style="margin-top:0">Vitesses ascensionnelles lues sur les graphiques du manuel de vol du DA20-C1, à la masse maximale (1 764 lb). Le manuel ne corrige pas pour une masse plus faible : la montée réelle sera meilleure. Le départ utilise les conditions du départ, la remise des gaz celles de l’arrivée (carte précédente).</p>
-      <div class="fields">
-        <div><label for="cl_alt">Altitude de croisière (ft)</label><input id="cl_alt" type="number" inputmode="decimal" step="any"></div>
-        <div><label for="cl_req">Gradient requis (ft/NM, facultatif)</label><input id="cl_req" type="number" inputmode="decimal" step="any"></div>
-      </div>
-      <label class="chk" style="margin-top:8px"><input type="checkbox" id="cl_nof"> Sans carénages de roues (−3 % selon le manuel)</label>
-      <div id="clOut" style="margin-top:8px"></div>
     </section>
   </div>
 
+  <!-- ÉTAPE 4 : PERFORMANCES -->
+  <div class="step" data-step="4" hidden>
+    <section class="card" id="pfBox">
+      <h2>Décollage et atterrissage</h2>
+      <div id="pfOut"></div>
+      <details class="oaip">
+        <summary>Ajuster la piste, le vent, la température</summary>
+        <p class="note" style="margin-top:0">Les champs se remplissent seuls avec le METAR. Distances lues sur les graphiques et le tableau du manuel de vol du DA20-C1 (piste en dur, plane, puissance maximale au décollage, volets en position T/O). Le vent se saisit en degrés magnétiques, comme à l’ATIS et à la tour.</p>
+        <div id="pfIn"></div>
+        <div class="fields" style="margin-top:10px">
+          <div><label for="pf_margin">Marge de sécurité (%)</label><input id="pf_margin" type="number" inputmode="decimal" step="any" min="0"></div>
+        </div>
+        <p class="note">La marge est un choix personnel, ce n’est pas une exigence du manuel de vol.</p>
+        <label class="chk" style="margin-top:8px"><input type="checkbox" id="pf_hw50"> Ne compter que 50 % du vent de face (prudent)</label>
+        <p class="note">Les distances sont lues par calcul sur les graphiques du manuel, avec une incertitude d’environ 5 %. En cas de doute, compare avec le graphique du manuel de vol.</p>
+      </details>
+    </section>
+    <section class="card" id="clBox">
+      <h2>Montée</h2>
+      <div id="clOut"></div>
+      <details class="oaip">
+        <summary>Ajuster la montée</summary>
+        <p class="note" style="margin-top:0">Vitesses ascensionnelles lues sur les graphiques du manuel de vol du DA20-C1, à la masse maximale (1 764 lb). Le manuel ne corrige pas pour une masse plus faible : la montée réelle sera meilleure. Le départ utilise les conditions du départ, la remise des gaz celles de l’arrivée.</p>
+        <div class="fields">
+          <div><label for="cl_alt">Altitude de croisière (ft)</label><input id="cl_alt" type="number" inputmode="decimal" step="any"></div>
+          <div><label for="cl_req">Gradient requis (ft/NM, facultatif)</label><input id="cl_req" type="number" inputmode="decimal" step="any"></div>
+        </div>
+        <label class="chk" style="margin-top:8px"><input type="checkbox" id="cl_nof"> Sans carénages de roues (−3 % selon le manuel)</label>
+      </details>
+    </section>
+  </div>
+
+  <!-- ÉTAPE 5 : BRIEFING -->
   <div class="step" data-step="5" hidden>
     <section class="card">
       <h2>Verdict de préparation</h2>
       <div id="vd"></div>
     </section>
-    <section class="card" style="margin-top:16px">
-      <h2>Pour compléter la préparation</h2>
-      <p class="note" style="margin-top:0">Plan Vol lit les METAR et les TAF, et les vents en altitude viennent d’un modèle numérique, pas du produit officiel. Avant le vol, complète avec les produits officiels : cartes GFA, SIGMET, AIRMET, PIREP, radar, satellite. Plan Vol ne lit pas les NOTAM : consulte-les dans le service de planification de vol de NAV CANADA.</p>
-      <p class="note" id="notamNote"></p>
-      <div class="list">
-        <a class="btn" style="display:block;text-align:center;text-decoration:none" href="https://flightplanning.navcanada.ca" target="_blank" rel="noopener">Site météo de NAV CANADA</a>
-        <a class="btn" style="display:block;text-align:center;text-decoration:none" href="tel:+18669927433">Briefing du FIC : 1-866-WXBRIEF</a>
-        <a class="btn" style="display:block;text-align:center;text-decoration:none" href="tel:+18664663836">Québec, en français : 1-866-GOMÉTÉO</a>
-      </div>
+    <section class="card" id="ckCard">
+      <h2>Avant de partir</h2>
+      <div id="ck"></div>
+      <div id="ckFinal" style="margin-top:10px"></div>
     </section>
-    <section class="card" style="margin-top:16px">
-      <h2>Résumé du vol</h2>
-      <p class="note" id="exNote" hidden>Route d’exemple. Va à l’étape Route pour la remplacer par la tienne.</p>
-      <div id="sum" class="sum"></div>
-      <div class="tools" style="margin-top:10px;margin-bottom:0">
-        <button class="btn" id="copy" type="button">Copier le plan</button>
+    <section class="card">
+      <h2>Plan du vol</h2>
+      <p class="note" id="exNote" hidden>Route d’exemple. Change le départ et l’arrivée à l’étape Vol pour la remplacer par la tienne.</p>
+      <div class="tools" style="margin-bottom:10px">
         <button class="btn on" id="pdf" type="button">Exporter en PDF</button>
+        <button class="btn" id="copy" type="button">Copier le plan</button>
         <button class="btn" id="print" type="button">Imprimer</button>
       </div>
       <p class="note" id="copyMsg" hidden></p>
+      <div id="sum" class="sum"></div>
       <textarea id="out" readonly hidden aria-label="Texte du plan"></textarea>
     </section>
-    <section class="card" style="margin-top:16px">
-      <h2>Itinéraire de vol VFR</h2>
-      <p class="note" style="margin-top:0">Aide-mémoire à recopier dans le formulaire de dépôt de plan de vol ou d’itinéraire. Plan Vol ne le dépose pas : vérifie chaque champ et ferme-le à l’arrivée.</p>
+    <details class="card dcard">
+      <summary>Itinéraire de vol VFR (aide-mémoire pour le dépôt)</summary>
+      <p class="note">À recopier dans le formulaire de dépôt de plan de vol ou d’itinéraire. Plan Vol ne le dépose pas : vérifie chaque champ et ferme-le à l’arrivée.</p>
       <div class="fields">
         <div><label for="fp_reg">Immatriculation</label><input id="fp_reg" type="text" placeholder="C-GXXX" autocapitalize="characters" autocomplete="off" autocorrect="off" spellcheck="false"></div>
         <div><label for="fp_pilot">Nom du pilote</label><input id="fp_pilot" type="text" autocomplete="off"></div>
@@ -1036,11 +1146,11 @@ pre.code{font:11px "B612 Mono",monospace;background:var(--panel);border:1px soli
       <div class="tools" style="margin-top:10px;margin-bottom:0"><button class="btn on" id="fpCopy" type="button">Copier l’itinéraire</button></div>
       <p class="note" id="fpMsg" hidden></p>
       <textarea id="fpOut" readonly aria-label="Itinéraire de vol VFR" style="width:100%;min-height:230px;margin-top:8px;font:12px 'B612 Mono',monospace;background:var(--field);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:8px"></textarea>
-    </section>
-    <section class="card" style="margin-top:16px">
-      <h2>Tronçons</h2>
-      <div class="list" id="legs"></div>
-    </section>
+    </details>
+    <details class="card dcard">
+      <summary>Détail des tronçons</summary>
+      <div class="list" id="legs" style="margin-top:10px"></div>
+    </details>
   </div>
 
   <div class="stepnav">
@@ -1109,8 +1219,8 @@ var KEY="planvol_v1";
 var $=function(i){return document.getElementById(i)};
 var S={ac:0,acn:"Diamond DA20-C1",cruise:122,burn:6.4,fuel:24,crk:"4000-2700",taxi:1,res:30,resAuto:true,date:"",wd:0,ws:0,decl:14,dep:"",example:true,
  pts:[{n:"CYQB",la:APT.CYQB[0],lo:APT.CYQB[1]},{n:"CYRQ",la:APT.CYRQ[0],lo:APT.CYRQ[1]},{n:"CYHU",la:APT.CYHU[0],lo:APT.CYHU[1]}]};
-var addMode=true,clearArmed=false,clearTimer=null,step=1,mapReady=false;
-var STEPNAMES=["Avion","Route","Conditions","Charge","Résultat"];
+var addMode=false,clearArmed=false,clearTimer=null,step=1,mapReady=false;
+var STEPNAMES=["Vol","Météo","Charge","Perfs","Briefing"];
 
 function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
 function loadSaved(){try{var j=localStorage.getItem(KEY);if(j){var o=JSON.parse(j);if(o&&o.pts&&typeof o.cruise==="number"){S=o;if(S.acn){for(var q=0;q<AIRCRAFT.length;q++)if(AIRCRAFT[q].n===S.acn)S.ac=q}else S.ac=Math.min(S.ac+1,AIRCRAFT.length-1);if(S.acn===DA20&&!S.crk&&S.cruise===115&&S.burn===7){S.cruise=122;S.burn=6.4;S.crk="4000-2700"}if(S.resAuto===undefined){S.resAuto=true;S.res=30}}}}catch(e){}}
@@ -1184,8 +1294,8 @@ function showStep(n){
   $("back").hidden=(n===1);
   $("next").hidden=(n===5);
   $("back").textContent="Retour : "+(n>1?STEPNAMES[n-2]:"");
-  $("next").textContent=n<5?"Suivant : "+STEPNAMES[n]:"";
-  if(n===2)setTimeout(function(){map.invalidateSize();if(!mapReady){mapReady=true;fitRoute()}},60);
+  $("next").textContent=n<5?"Continuer : "+STEPNAMES[n]:"";
+  if(n===1)setTimeout(function(){map.invalidateSize();if(!mapReady){mapReady=true;fitRoute()}},60);
   window.scrollTo(0,0);
 }
 $("steps").addEventListener("click",function(e){var b=e.target.closest("button[data-s]");if(b)showStep(+b.getAttribute("data-s"))});
@@ -1207,6 +1317,7 @@ function syncInputs(){
   $("cruiseBox").hidden=!isDA;
   if(isDA)$("cruiseSel").value=S.crk||"custom";
   Array.prototype.forEach.call($("acList").children,function(b,j){b.setAttribute("aria-pressed",j===S.ac?"true":"false")});
+  syncRt();flRender();
 }
 AIRCRAFT.forEach(function(a,i){
   var b=document.createElement("button");b.type="button";
@@ -1273,7 +1384,7 @@ function addPoint(p,at){
   S.pts.splice(at,0,p);
 }
 function structure(){S.example=false;renderPoints();refresh()}
-function addAirport(k){addPoint({n:k,la:APT[k][0],lo:APT[k][1]});structure()}
+function addAirport(k,at){addPoint({n:k,la:APT[k][0],lo:APT[k][1]},at);structure()}
 
 $("addIn").addEventListener("input",function(){
   var r=searchApt($("addIn").value),h="";
@@ -1282,7 +1393,7 @@ $("addIn").addEventListener("input",function(){
 });
 $("addRes").addEventListener("click",function(e){
   var b=e.target.closest("button[data-k]");if(!b)return;
-  addAirport(b.getAttribute("data-k"));$("addIn").value="";$("addRes").innerHTML="";fitRoute();
+  addAirport(b.getAttribute("data-k"),viaAt());$("addIn").value="";$("addRes").innerHTML="";fitRoute();
 });
 $("addBtn").onclick=addFromInput;
 $("addIn").addEventListener("keydown",function(e){if(e.key==="Enter"){e.preventDefault();addFromInput()}});
@@ -1290,17 +1401,18 @@ function addFromInput(){
   var txt=$("addIn").value,r=parseRoute(txt),er=$("addErr");
   if(!txt.trim()){er.textContent="Entre un nom, un code d’aéroport ou des coordonnées.";er.hidden=false;return}
   if(!r.bad.length&&r.pts.length){
-    er.hidden=true;r.pts.forEach(function(p){addPoint(p)});
+    er.hidden=true;r.pts.forEach(function(p){addPoint(p,viaAt())});
   }else{
     var s=searchApt(txt);
     if(!s.length){er.textContent="Aucun résultat pour « "+txt.trim()+" ». Essaie un autre nom, ou entre des coordonnées comme 46.35/-72.68.";er.hidden=false;return}
-    er.hidden=true;addPoint({n:s[0].k,la:s[0].a[0],lo:s[0].a[1]});
+    er.hidden=true;addPoint({n:s[0].k,la:s[0].a[0],lo:s[0].a[1]},viaAt());
   }
   $("addIn").value="";$("addRes").innerHTML="";
   structure();fitRoute();
 }
 
 function renderPoints(){
+  syncRt();
   var h="";
   if(!S.pts.length)h="<p class=\"note\">Aucun point. Touche la carte ou cherche un aéroport.</p>";
   S.pts.forEach(function(p,i){
@@ -1353,7 +1465,7 @@ $("lw").addEventListener("change",function(e){
 function cell(l,v,cls,extra){return "<div class=\"cell"+(extra?" "+extra:"")+"\"><div class=\"l\">"+l+"</div><div class=\"v"+(cls?" "+cls:"")+"\">"+v+"</div></div>"}
 function renderSummary(C){
   $("exNote").hidden=!S.example;
-  if(S.pts.length<2){$("sum").innerHTML="<p class=\"note\" style=\"grid-column:1/-1\">Ajoute au moins deux points à l’étape Route pour calculer le vol.</p>";return}
+  if(S.pts.length<2){$("sum").innerHTML="<p class=\"note\" style=\"grid-column:1/-1\">Ajoute au moins deux points à l’étape Vol pour calculer le vol.</p>";return}
   var ok=C.margin>=0,h="";
   h+=cell("Distance","<span class=\"mono\">"+C.tD.toFixed(0)+" NM</span>");
   h+=cell("Temps de vol",hm(C.tT));
@@ -1480,7 +1592,13 @@ function drawApts(){
     n++;
     var m=L.circleMarker([a[0],a[1]],{radius:a[4]?7:5,color:"#fff",weight:2,fillColor:"#006f8a",fillOpacity:1,bubblingMouseEvents:false});
     m.bindTooltip(k,{permanent:lab,direction:"right",offset:[6,0],className:"aptl"});
-    m.on("click",function(){addAirport(k)});
+    m.on("click",function(){
+      if(addMode){addAirport(k);return}
+      var el=document.createElement("div");
+      el.innerHTML="<b>"+k+"</b> "+esc(a[2])+"<div class=\"tools\" style=\"margin:8px 0 0\"><button class=\"btn\" type=\"button\" data-w=\"dep\">Départ</button><button class=\"btn\" type=\"button\" data-w=\"via\">Via</button><button class=\"btn\" type=\"button\" data-w=\"arr\">Arrivée</button></div>";
+      Array.prototype.forEach.call(el.querySelectorAll("button"),function(bt){bt.onclick=function(){map.closePopup();rtPlace(k,bt.getAttribute("data-w"))}});
+      L.popup({closeButton:true}).setLatLng([a[0],a[1]]).setContent(el).openOn(map);
+    });
     m.addTo(aptG);
   });
 }
@@ -1489,6 +1607,7 @@ function drawRoute(C){
   C.legs.forEach(function(l,i){
     var a=[l.a.la,l.a.lo],b=[l.b.la,l.b.lo];
     L.polyline([a,b],{color:"#a85d00",weight:5,opacity:.9,bubblingMouseEvents:false}).on("click",function(e){
+      if(!addMode)return;
       addPoint({n:"",la:e.latlng.lat,lo:e.latlng.lng},i+1);structure();
     }).addTo(routeG);
     L.marker([(a[0]+b[0])/2,(a[1]+b[1])/2],{interactive:false,icon:L.divIcon({className:"",html:"<span class=\"legl\">"+deg(l.mh)+" · "+l.d.toFixed(0)+" NM</span>",iconSize:[0,0]})}).addTo(routeG);
@@ -1514,7 +1633,7 @@ map.on("moveend",function(){drawApts();drawGrid()});
 $("addMode").onclick=function(){
   addMode=!addMode;var b=$("addMode");
   b.classList.toggle("on",addMode);b.setAttribute("aria-pressed",addMode?"true":"false");
-  b.textContent=addMode?"Toucher la carte ajoute un point":"Ajout par la carte désactivé";
+  b.textContent=addMode?"Ajout actif : touche la carte":"＋ Ajouter par la carte";
   $("map").classList.toggle("adding",addMode);
 };
 function fitRoute(){
@@ -1638,7 +1757,7 @@ function renderWx(list){
     else{
       var w=o.wspd===undefined?"--":(o.wspd===0?"Calme":((o.vrb?"Variable":deg(o.wdir)+" "+o.wspd+" kt")+(o.vrb?", "+o.wspd+" kt":"")+(o.gust?", rafales "+o.gust+" kt":"")+(o.v1!==undefined?" (varie de "+deg(o.v1)+" à "+deg(o.v2)+")":"")));
       var spread=(o.temp!==undefined&&o.dew!==undefined)?o.temp-o.dew:null;
-      h+="<div class=\"lg\">"
+      h+="<div class=\"lg cmp\">"
        +cell("Vent (vrai)",w)
        +cell("Visibilité",o.visTxt?o.visTxt.replace(/^P/,"plus de ").replace(/^M/,"moins de ")+" SM":"--")
        +cell("Nuages",cloudTxt(o))
@@ -1651,7 +1770,7 @@ function renderWx(list){
       if(o.gust)warn.push("Rafales à "+o.gust+" kt.");
       if(o.age>70)warn.push("Rapport de plus de 70 minutes : vérifie qu’un METAR plus récent n’existe pas.");
       if(warn.length)h+="<p class=\"note bad\">"+esc(warn.join(" "))+"</p>";
-      h+="<div class=\"raw\">"+esc(r.metar)+"</div>";
+      h+="<details style=\"margin-top:6px\"><summary class=\"wxt\">METAR brut</summary><div class=\"raw\">"+esc(r.metar)+"</div></details>";
       if(r.stale)h+="<p class=\"note bad\">Données enregistrées à "+hhmm(r.t)+" (pas de réponse du serveur ou hors ligne).</p>";
       if(o.wspd!==undefined&&!o.vrb&&o.wdir!==null&&o.wspd>0)h+="<div class=\"tools\" style=\"margin:8px 0 0\"><button class=\"btn\" type=\"button\" data-wxuse=\""+esc(r.code)+"\">Utiliser ce vent pour la route</button></div>";
     }
@@ -1872,7 +1991,7 @@ function pfRender(C){
   $("wbBox").hidden=!isDA;$("pfBox").hidden=!isDA;$("wbOther").hidden=isDA;
   LAST={wb:null,pf:null};
   if(!isDA)return;
-  $("wbFuel").textContent="Carburant : "+S.fuel.toFixed(1)+" gal à bord au départ (étape 1), "+S.taxi.toFixed(1)+" gal pour le roulage, "+(S.pts.length>1?C.trip.toFixed(1):"0,0")+" gal pour le trajet. Densité "+fr(WB.dens)+" lb/gal.";
+  $("wbFuel").textContent="Carburant : "+S.fuel.toFixed(1)+" gal à bord au départ, "+S.taxi.toFixed(1)+" gal pour le roulage, "+(S.pts.length>1?C.trip.toFixed(1):"0,0")+" gal pour le trajet. Densité "+fr(WB.dens)+" lb/gal.";
   var W=wbCalc(C);LAST.wb=W;wbRender(W);
   var marg=1+Math.max(0,num(S.pf.margin,25))/100;
   var wTO=(W&&!W.missing)?W.conds[1].w:WB.mtow,assumed=!(W&&!W.missing);
@@ -2014,7 +2133,7 @@ function clRender(C){
     h+="</div>";
     if(alt>13120)notes.push("Le manuel indique une altitude de croisière maximale de 13 120 ft (conditions standard).");
   }
-  notes.push("Le carburant de la montée à pleine puissance n’est pas dans le manuel : compte-le dans le champ « Roulage et montée » de l’étape 1.");
+  notes.push("Le carburant de la montée à pleine puissance n’est pas dans le manuel : compte-le dans le champ « Roulage et montée » de l’étape Charge.");
   notes.push("Les vitesses de meilleur angle de montée sont 60 KIAS (volets croisière) et 57 KIAS (volets décollage), sans graphique dans le manuel.");
   h+="<p class=\"note"+(notes.some(function(n){return /Hors|n’atteint|plus longue|maximale de/.test(n)})?" bad":"")+"\">"+esc(notes.join(" "))+"</p>";
   $("clOut").innerHTML=h;
@@ -2156,7 +2275,7 @@ function buildPdf(){
   var date=new Date().toLocaleDateString("fr-CA");
   D.para("Plan de vol",{size:20,bold:true,after:2});
   D.para(AIRCRAFT[S.ac].n+" · vitesse vraie "+S.cruise+" kt · "+fr(S.burn)+" gal US/h · préparé le "+date,{size:10,col:"mute",after:6});
-  if(S.pts.length<2){D.para("Aucune route : ajoute au moins deux points à l’étape Route.",{size:11});return D.build("Plan Vol")}
+  if(S.pts.length<2){D.para("Aucune route : ajoute au moins deux points à l’étape Vol.",{size:11});return D.build("Plan Vol")}
   var vt=LAST.vd;
   if(vt){
     D.h2("Verdict de préparation");
@@ -2178,7 +2297,7 @@ function buildPdf(){
   /* Météo */
   var codes=Object.keys(WX);
   D.h2("Météo (METAR et TAF)");
-  if(!codes.length)D.para("Non chargée. Utilise « Récupérer la météo » à l’étape Conditions avant d’exporter.",{size:9.5,col:"mute"});
+  if(!codes.length)D.para("Non chargée. Ouvre l’étape Météo avant d’exporter.",{size:9.5,col:"mute"});
   else{
     if(WXTIME)D.para("Chargée à "+WXTIME.toLocaleTimeString("fr-CA",{hour:"2-digit",minute:"2-digit"})+" (heure locale). Vents du METAR en degrés vrais.",{size:8.5,col:"mute",after:4});
     codes.forEach(function(k){
@@ -2589,15 +2708,16 @@ function metarBrief(o){
 }
 function buildVerdict(C){
   var it=[],box=$("vd"),isDA=AIRCRAFT[S.ac].n===DA20,pmBad=false,pmTmp=false,AI=altInfo();LAST.aa=null;
-  function add(l,t){it.push({l:l,t:t})}
-  if(S.pts.length<2){LAST.vd=null;$("vdBar").hidden=true;box.innerHTML="<p class=\"note\" style=\"margin-top:0\">Ajoute au moins deux points à l’étape Route pour obtenir le verdict.</p>";return}
+  var G="wx";
+  function add(l,t){it.push({l:l,t:t,g:G})}
+  if(S.pts.length<2){LAST.vd=null;box.innerHTML="<p class=\"note\" style=\"margin-top:0\">Ajoute au moins deux points à l’étape Vol pour obtenir le verdict.</p>";return}
   var ft=flightTimes(C),dc=wxCodeFor(S.pts[0]),ac=wxCodeFor(S.pts[S.pts.length-1]),arrBad=false,arrCat=null;
   /* Météo départ et arrivée */
   [["Départ",dc,true],["Arrivée",ac,false]].forEach(function(x){
     var code=x[1];
     if(!code){add("warn",x[0]+" : aucun aéroport avec météo à moins de 60 NM.");return}
     var r=WX[code];
-    if(!r){add("info",x[0]+" ("+code+") : météo pas encore chargée."+(navigator.onLine===false?" Hors ligne : ouvre l’étape Conditions quand tu as du réseau.":""));return}
+    if(!r){add("info",x[0]+" ("+code+") : météo pas encore chargée."+(navigator.onLine===false?" Hors ligne : ouvre l’étape Météo quand tu as du réseau.":""));return}
     var o=r.metar?parseMetar(r.metar):null,lvl;
     if(!o)add("warn",x[0]+" "+code+" : pas de METAR pour cette station.");
     else{
@@ -2630,6 +2750,7 @@ function buildVerdict(C){
     var fc=fcEval(k,C,ft);if(fc){if(fc.pmbad)pmBad=true;if(fc.pmtmp)pmTmp=true}if(fc&&fc.lvl!=="ok"&&fc.lvl!=="info")add(fc.lvl,"TAF "+k+" (en route) : "+fc.txt);
   });
   /* Dégagement */
+  G="alt";
   var alts=Object.keys(WX).filter(function(k){return WX[k].alt&&WX[k].metar}).map(function(k){
     var o=parseMetar(WX[k].metar),a=APT[k],e=S.pts[S.pts.length-1];
     return {k:k,o:o,d:dist(e.la,e.lo,a[0],a[1])};
@@ -2643,12 +2764,13 @@ function buildVerdict(C){
     if(afc&&afc.lvl!=="info")add(afc.lvl==="ok"?"info":afc.lvl,"TAF "+AI.code+" (dégagement) : "+afc.txt);
   }
   /* Performances du DA20 */
+  G="perf";
   var P=LAST.pf,W=LAST.wb,Q=LAST.cl;
   if(isDA&&P){
     ["dep","arr"].forEach(function(w){
       var I=P.out[w].I,o=P.out[w].o,nm=(w==="dep"?"Départ":"Arrivée")+(I.code?" "+I.code:"");
       if(!I.code){add("info",nm+" : point hors aéroport, performances à saisir à la main.");return}
-      if(I.rh===null){add("warn",nm+" : piste inconnue, les distances sont calculées sans vent. Saisis la piste à l’étape 4.");return}
+      if(I.rh===null){add("warn",nm+" : piste inconnue, les distances sont calculées sans vent. Saisis la piste à l’étape Perfs.");return}
       var ax=Math.abs(I.xw),lvl="ok",txt=nm+" piste "+I.rt+" : vent de face "+Math.round(I.hw)+" kt, traversier "+Math.round(ax)+" kt";
       if(ax>20){lvl="bad";txt+=" (au-dessus du maximum démontré de 20 kt)"}
       else if(ax>=15){lvl="warn";txt+=" (près du maximum démontré de 20 kt)"}
@@ -2670,11 +2792,13 @@ function buildVerdict(C){
     });
   }
   if(isDA){
+    G="wb";
     if(!W||W.missing)add("warn","Masse et centrage : entre la masse à vide et le moment à vide de l’avion (étape Charge).");
     else{
       var c1=W.conds[1];
       add(W.ok&&!W.msgs.length?"ok":"bad","Masse et centrage : décollage "+Math.round(c1.w)+" lb, CG "+fr(c1.arm.toFixed(2))+" po — "+(W.ok?"dans l’enveloppe":"HORS LIMITES")+(W.msgs.length?". "+W.msgs.join(" "):"")+".");
     }
+    G="perf";
     if(Q&&Q.climb&&Q.climb.r){
       var R=Q.climb.r;
       if(R.ceil)add("bad","Montée : l’altitude de croisière de "+sp(Math.round(Q.climb.alt))+" ft n’est pas atteignable dans les conditions du départ.");
@@ -2682,11 +2806,14 @@ function buildVerdict(C){
     }
   }
   /* Carburant */
+  G="fuel";
   var mmin=C.margin/S.burn*60;
   if(C.margin<0)add("bad","Carburant : il manque "+(-C.margin).toFixed(1)+" gal pour garder la réserve de "+C.resMin+" min.");
   else add(mmin<20?"warn":"ok","Carburant : "+S.fuel.toFixed(1)+" gal à bord, "+C.req.toFixed(1)+" requis avec la réserve de "+C.resMin+" min"+(C.altFuel>0?" et le dégagement "+C.alt.code+" ("+C.altFuel.toFixed(1)+" gal)":"")+", soit "+Math.round(mmin)+" min de marge.");
+  G="route";
   if(C.legs.some(function(l){return l.w.bad}))add("bad","Le vent saisi est trop fort sur au moins un tronçon pour tenir la route.");
   /* Jour et nuit */
+  G="sun";
   if(C.RI.night)add("warn","Vol de nuit ("+(C.RI.why==="depnight"?"départ":"arrivée")+" après la fin du crépuscule civil) : réserve portée à 45 min. Vérifie l’équipement de l’avion et tes qualifications.");
   else if(C.RI.why==="nodep")add("info","Entre la date et l’heure de départ pour vérifier jour ou nuit, l’heure d’arrivée et le TAF à l’heure du vol.");
   var SI=sunInfo(C);
@@ -2696,32 +2823,38 @@ function buildVerdict(C){
     add("info","Jour : départ de jour à partir de "+clock(SI.dep.cs)+" ; pour arriver avant la fin du crépuscule civil ("+clock(SI.arr.ce)+", coucher du soleil à "+clock(SI.arr.set)+"), départ au plus tard à "+clock(SI.latest)+" (heure de ton appareil).");
   }
   /* Vents en altitude */
+  G="wx";
   if(WAD&&!(S.wa&&S.wa.on===false)){
     var wp=[],mxw=0;
     C.legs.forEach(function(L,i){var w=WAD.legs[i];if(w){mxw=Math.max(mxw,w.ws);wp.push((i+1)+". "+(w.ws<1?"calme":deg(w.wd)+" / "+Math.round(w.ws)+" kt"))}});
     if(wp.length)add(mxw>=30?"warn":"info","Vents en altitude à "+sp(Math.round(WAD.alt))+" ft (modèle, degrés vrais) : "+wp.join(" ; ")+(WAD.noDep?" (prévision pour dans 1 h : entre l’heure de départ)":"")+". Ce n’est pas le produit officiel : compare avec les cartes GFA.");
   }else if(S.pts.length>1)add("info","Vents en altitude non disponibles : les calculs des tronçons utilisent le vent de surface.");
   /* NOTAM */
+  G="notam";
   var nst=wxStations().slice(0,8);if(alts&&alts.length)nst.push(alts[0].k);
   var ntxt=nst.join(" ");
   add("info","NOTAM : à consulter avant le vol pour "+(ntxt||"la route")+" dans le service de planification de vol de NAV CANADA. Plan Vol ne lit pas les NOTAM.");
   $("notamNote").textContent=ntxt?"Aérodromes à saisir pour les NOTAM : "+ntxt+".":"";
   /* Vent */
+  G="wx";
   if(S.windAuto&&S.windMan!==true&&S.ws>0)add("info","Vent de la route : "+deg(S.wd)+" / "+S.ws+" kt, calculé à partir des vents de surface. Compare avec les vents en altitude (GFA, prévisions de vents) avant le vol.");
+  G="alt";
   var AA=altAdvice(C);LAST.aa=AA;
-  if(AA&&AA.best&&AA.cur&&AA.best!==AA.cur&&AA.cur.time-AA.best.time>=3/60&&(AA.best.vfr||AA.best.low))add("info","Altitude conseillée : "+sp(AA.best.a)+" ft, "+hm(AA.best.time)+" au lieu de "+hm(AA.cur.time)+" à "+sp(AA.cur.a)+" ft (modèle de vents, à vérifier). Détails à l’étape Conditions.");
+  if(AA&&AA.best&&AA.cur&&AA.best!==AA.cur&&AA.cur.time-AA.best.time>=3/60&&(AA.best.vfr||AA.best.low))add("info","Altitude conseillée : "+sp(AA.best.a)+" ft, "+hm(AA.best.time)+" au lieu de "+hm(AA.cur.time)+" à "+sp(AA.cur.a)+" ft (modèle de vents, à vérifier). Détails à l’étape Météo.");
+  G="wx";
   if(pmActive()&&!pmBad&&pmTmp)add("warn","Mes minimums personnels : respectés au départ et à l’arrivée, mais le TAF prévoit un passage sous tes minimums pendant le vol (voir plus haut).");
   else if(pmActive()&&!pmBad)add("ok","Mes minimums personnels : respectés pour le METAR et le TAF"+(isDA&&pmVal("xw")!==null?" et le vent traversier":"")+".");
   var mx=0;it.forEach(function(x){mx=Math.max(mx,x.l==="bad"?2:(x.l==="warn"?1:0))});
   var head=mx===2?"À régler avant le départ":(mx===1?"À vérifier avant le départ":"Aucun point bloquant détecté");
   LAST.vd={head:head,lvl:mx,items:it};
   var h="<div class=\"vdh "+(mx===2?"bad":(mx===1?"warn":"ok"))+"\">"+esc(head)+"</div>";
-  it.forEach(function(x){h+="<div class=\"vdi\"><span class=\"vdd "+x.l+"\"></span><span>"+esc(x.t)+"</span></div>"});
+  var GOS={route:1,wx:2,alt:2,sun:2,notam:2,wb:3,fuel:3,perf:4},GOTXT={1:"Vol",2:"Météo",3:"Charge",4:"Perfs"};
+  function vi(x,go){return "<div class=\"vdi\"><span class=\"vdd "+x.l+"\"></span><span>"+esc(x.t)+"</span>"+(go?"<button class=\"lnk\" type=\"button\" data-go=\""+go+"\">"+GOTXT[go]+" ›</button>":"")+"</div>"}
+  var bw=it.filter(function(x){return x.l==="bad"}),ww=it.filter(function(x){return x.l==="warn"}),rest=it.filter(function(x){return x.l!=="bad"&&x.l!=="warn"});
+  bw.concat(ww).forEach(function(x){h+=vi(x,GOS[x.g])});
+  if(rest.length)h+="<details class=\"oaip\"><summary>"+rest.length+" autre"+(rest.length>1?"s":"")+" point"+(rest.length>1?"s":"")+" : vérifiés et informations</summary>"+rest.map(function(x){return vi(x,0)}).join("")+"</details>";
   h+="<p class=\"note\">Catégories de vol à vue approximatives (visibilité et plafond) : les minimums du RAC dépendent de l’espace aérien. Aide à la préparation seulement : la décision revient au commandant de bord.</p>";
   box.innerHTML=h;
-  var bar=$("vdBar"),nb=it.filter(function(x){return x.l==="bad"}).length,nw=it.filter(function(x){return x.l==="warn"}).length;
-  bar.hidden=false;bar.className="vdbar "+(mx===2?"bad":(mx===1?"warn":"ok"));
-  bar.textContent=head+(nb?" · "+nb+" problème"+(nb>1?"s":""):"")+(nw?" · "+nw+" à vérifier":"")+" — voir le verdict";
 }
 $("vdBar").onclick=function(){showStep(5)};
 function vdText(){
@@ -3037,11 +3170,11 @@ $("fpCopy").onclick=function(){
 /* Mémoire des avions et des personnes (sur cet appareil) */
 function memRender(){
   var h="",i;
-  (S.acs||[]).forEach(function(a,i){h+="<span class=\"chip\"><b>"+esc(a.reg)+"</b> "+sp(Math.round(a.ew))+" lb <button type=\"button\" class=\"btn\" data-acl=\""+i+"\">Charger</button><button type=\"button\" class=\"btn\" data-acd=\""+i+"\" aria-label=\"Supprimer\">×</button></span>"});
-  $("m_acs").innerHTML=h||"<span class=\"note\">Aucun avion enregistré.</span>";
+  (S.acs||[]).forEach(function(a,i){h+="<span class=\"chip\"><b>"+esc(a.reg)+"</b> "+sp(Math.round(a.ew))+" lb <button type=\"button\" class=\"btn\" data-acl=\""+i+"\">Utiliser</button><button type=\"button\" class=\"btn\" data-acd=\""+i+"\" aria-label=\"Supprimer\">×</button></span>"});
+  $("m_acs").innerHTML=h||"<span class=\"note\">Enregistre ton avion (masse et moment à vide) à l’étape Charge pour le retrouver ici.</span>";
   h="";
   (S.ppl||[]).forEach(function(p,i){h+="<span class=\"chip\"><b>"+esc(p.n)+"</b> "+Math.round(p.w)+" lb <button type=\"button\" class=\"btn\" data-ppl=\"p"+i+"\">Pilote</button><button type=\"button\" class=\"btn\" data-ppl=\"x"+i+"\">Passager</button><button type=\"button\" class=\"btn\" data-ppd=\""+i+"\" aria-label=\"Supprimer\">×</button></span>"});
-  $("m_ppl").innerHTML=h||"<span class=\"note\">Aucune personne enregistrée.</span>";
+  $("m_ppl").innerHTML=h||"<span class=\"note\">Aucune personne enregistrée : utilise « Enregistrer mon avion ou une personne » plus bas.</span>";
 }
 $("m_acadd").onclick=function(){
   var reg=$("m_reg").value.trim().toUpperCase(),ew=num(S.wb&&S.wb.ew,null),em=num(S.wb&&S.wb.em,null);
@@ -3103,6 +3236,260 @@ function featRender(C){
   var t=fpText();$("fpOut").value=t;
 }
 
+/* ---------- Parcours : départ et arrivée, heure rapide, vols enregistrés, statut, liste de vérification ---------- */
+function p2(x){return ("0"+x).slice(-2)}
+function dstr(d){return d.getFullYear()+"-"+p2(d.getMonth()+1)+"-"+p2(d.getDate())}
+function rtPt(k){return {n:k,la:APT[k][0],lo:APT[k][1]}}
+function viaAt(){return (S.pts.length>=2&&!S.example)?S.pts.length-1:null}
+function rtPrep(pt){
+  pt=JSON.parse(JSON.stringify(pt));pt.la=+(+pt.la).toFixed(5);pt.lo=+(+pt.lo).toFixed(5);
+  if(!pt.n)pt.n=nextName();
+  return pt;
+}
+function rtSet(which,pt){
+  if(S.example){S.pts=[];S.example=false;S.arrFirst=false}
+  var n=S.pts.length;pt=rtPrep(pt);
+  if(which==="dep"){
+    if(n===0)S.pts.push(pt);
+    else if(n===1&&S.arrFirst){S.pts.unshift(pt);S.arrFirst=false}
+    else S.pts[0]=pt;
+  }else{
+    if(n===0){S.pts.push(pt);S.arrFirst=true}
+    else if(n===1&&S.arrFirst)S.pts[0]=pt;
+    else if(n===1)S.pts.push(pt);
+    else S.pts[n-1]=pt;
+  }
+  if(S.pts.length>1)S.arrFirst=false;
+  structure();fitRoute();
+}
+function rtPlace(k,w){
+  if(w==="via"){
+    if(S.pts.length<2){rtSet(S.pts.length?"arr":"dep",rtPt(k));return}
+    addPoint(rtPt(k),viaAt());structure();fitRoute();
+  }else rtSet(w,rtPt(k));
+}
+function rtErr(t){var e=$("rtErr");e.textContent=t||"";e.hidden=!t}
+function rtSuggest(which){
+  var el=$(which==="dep"?"rtDep":"rtArr"),r=searchApt(el.value),h="";
+  r.forEach(function(x){h+="<button type=\"button\" data-w=\""+which+"\" data-k=\""+x.k+"\"><b>"+x.k+"</b> "+esc(x.a[2])+(x.a[3]&&x.a[3]!==x.a[2]?" <span>("+esc(x.a[3])+")</span>":"")+"</button>"});
+  $("rtRes").innerHTML=h;rtErr("");
+}
+["dep","arr"].forEach(function(w){
+  var el=$(w==="dep"?"rtDep":"rtArr");
+  el.addEventListener("input",function(){
+    var t=el.value.trim().toUpperCase();
+    rtSuggest(w);
+    if(t.length>=3&&APT[t]){$("rtRes").innerHTML="";el.value=t;rtSet(w,rtPt(t))}
+  });
+  el.addEventListener("keydown",function(e){
+    if(e.key!=="Enter")return;
+    e.preventDefault();
+    var t=el.value.trim();if(!t)return;
+    var r=parseRoute(t);
+    if(r.pts.length===1&&!r.bad.length){$("rtRes").innerHTML="";rtSet(w,r.pts[0]);el.blur();return}
+    var s=searchApt(t);
+    if(!s.length){rtErr("Aucun résultat pour « "+t+" ». Essaie un autre nom, un code d’aéroport, ou des coordonnées comme 46.35/-72.68.");return}
+    $("rtRes").innerHTML="";rtSet(w,rtPt(s[0].k));el.blur();
+  });
+});
+$("rtRes").addEventListener("click",function(e){
+  var b=e.target.closest("button[data-k]");if(!b)return;
+  $("rtRes").innerHTML="";rtErr("");rtSet(b.getAttribute("data-w"),rtPt(b.getAttribute("data-k")));
+  var el=$(b.getAttribute("data-w")==="dep"?"rtDep":"rtArr");if(el&&el.blur)el.blur();syncRt();
+});
+$("rtSwap").onclick=function(){if(S.pts.length>=2){S.pts.reverse();structure();fitRoute()}};
+$("rtRound").onclick=function(){
+  var n=S.pts.length;if(n<2)return;
+  var back=S.pts.slice(0,n-1).reverse().map(function(p){return {n:p.n,la:p.la,lo:p.lo}});
+  S.pts=S.pts.concat(back);S.example=false;structure();fitRoute();
+};
+$("viaAdd").onclick=function(){$("ptsBox").open=true;$("addIn").focus()};
+$("viaBox").addEventListener("click",function(e){
+  var b=e.target.closest("button[data-via]");if(!b)return;
+  S.pts.splice(+b.getAttribute("data-via"),1);structure();
+});
+function syncRt(){
+  var n=S.pts.length,ae=document.activeElement,af=S.arrFirst&&n===1;
+  if(ae!==$("rtDep"))$("rtDep").value=(n&&!af)?S.pts[0].n:"";
+  if(ae!==$("rtArr"))$("rtArr").value=n>1?S.pts[n-1].n:(af?S.pts[0].n:"");
+  var h="";
+  S.pts.slice(1,-1).forEach(function(p,i){h+="<span class=\"chip\"><b>"+esc(p.n)+"</b><button class=\"btn\" type=\"button\" data-via=\""+(i+1)+"\" aria-label=\"Retirer "+esc(p.n)+"\">✕</button></span>"});
+  $("viaBox").innerHTML=h?"<label>Points de passage</label>"+h:"";
+}
+$("mapBig").onclick=function(){
+  var b=$("mapBig"),on=b.getAttribute("aria-pressed")!=="true";
+  b.setAttribute("aria-pressed",on?"true":"false");b.textContent=on?"Réduire la carte":"Agrandir la carte";
+  $("map").classList.toggle("tall",on);setTimeout(function(){map.invalidateSize();fitRoute()},60);
+};
+
+/* Date et heure rapides */
+$("quickT").addEventListener("click",function(e){
+  var b=e.target.closest("button");if(!b)return;
+  var qd=b.getAttribute("data-qd"),qt=b.getAttribute("data-qt"),d=new Date();
+  if(qd!==null){d.setDate(d.getDate()+(+qd));S.date=dstr(d)}
+  else if(qt!==null){
+    d=new Date(Date.now()+(+qt)*60000);var m=Math.ceil(d.getMinutes()/5)*5;d.setMinutes(m,0,0);
+    S.date=dstr(d);S.dep=p2(d.getHours())+":"+p2(d.getMinutes());
+  }
+  syncInputs();refresh();
+});
+
+/* Carburant : raccourcis et résumé */
+$("fuelQuick").addEventListener("click",function(e){
+  var b=e.target.closest("button[data-fq]");if(!b)return;
+  var t=b.getAttribute("data-fq"),C=compute(),v=null,W=LAST.wb;
+  if(t==="full")v=AIRCRAFT[S.ac].f;
+  else if(t==="max"){if(W&&!W.missing&&W.fuelMax!==undefined)v=Math.floor(W.fuelMax*10)/10}
+  else if(t==="req")v=Math.ceil(C.req*2)/2;
+  if(v===null||isNaN(v))return;
+  S.fuel=v;$("fuel").value=v;refresh();
+});
+
+/* Vols enregistrés */
+var FKEY="planvol_flights",FPROF=["pm","fp","acs","ppl","wxKey","wxProxy"],flArm=-1,flTimer=null;
+function flAll(){try{var a=JSON.parse(localStorage.getItem(FKEY));return Array.isArray(a)?a:[]}catch(e){return []}}
+function flStore(a){try{localStorage.setItem(FKEY,JSON.stringify(a))}catch(e){}}
+function flMsg(t){var m=$("fl_msg");m.textContent=t||"";m.hidden=!t}
+function flRender(){
+  var a=flAll(),h="";
+  a.forEach(function(f,i){
+    h+="<div class=\"chip\" style=\"display:flex;justify-content:space-between\"><span><b>"+esc(f.name)+"</b> <span class=\"note\" style=\"margin:0\">"+(f.nm?f.nm+" NM · ":"")+esc(f.ac||"")+"</span></span><span><button class=\"btn on\" type=\"button\" data-fo=\""+i+"\">Ouvrir</button> <button class=\"btn"+(flArm===i?" warn":"")+"\" type=\"button\" data-fd=\""+i+"\" aria-label=\"Supprimer\">"+(flArm===i?"Confirmer":"✕")+"</button></span></div>";
+  });
+  $("fl_list").innerHTML=h||"<p class=\"note\" style=\"margin:0\">Aucun vol enregistré.</p>";
+}
+$("fl_save").onclick=function(){
+  if(S.pts.length<2){flMsg("Entre un départ et une arrivée avant d’enregistrer.");return}
+  var snap=JSON.parse(JSON.stringify(S));
+  FPROF.forEach(function(k){delete snap[k]});
+  snap.date="";snap.dep="";snap.example=false;
+  var nm=$("fl_name").value.trim()||(S.pts[0].n+" → "+S.pts[S.pts.length-1].n),a=flAll().filter(function(x){return x.name!==nm});
+  a.unshift({name:nm,t:Date.now(),nm:Math.round(compute().tD),ac:S.acn,snap:snap});
+  flStore(a.slice(0,30));$("fl_name").value="";flRender();flMsg("Vol « "+nm+" » enregistré.");
+};
+function flOpen(i){
+  var f=flAll()[i];if(!f)return;
+  var keep={};FPROF.forEach(function(k){if(S[k]!==undefined)keep[k]=S[k]});
+  Object.keys(S).forEach(function(k){delete S[k]});
+  Object.assign(S,JSON.parse(JSON.stringify(f.snap)),keep);
+  S.date=todayStr();S.dep="";S.example=false;
+  if(!S.wb)S.wb={};if(!S.pf)S.pf={dep:{},arr:{},margin:25};if(!S.cl)S.cl={};if(!S.wa)S.wa={};if(!S.pm)S.pm={};if(!S.fp)S.fp={};
+  WAD=null;syncInputs();renderPoints();refresh();showStep(1);fitRoute();
+  flMsg("Vol « "+f.name+" » ouvert. Remets la date et l’heure de départ.");
+}
+$("fl_list").addEventListener("click",function(e){
+  var o=e.target.closest("button[data-fo]"),d=e.target.closest("button[data-fd]");
+  if(o){flOpen(+o.getAttribute("data-fo"));return}
+  if(d){
+    var i=+d.getAttribute("data-fd");
+    if(flArm!==i){flArm=i;clearTimeout(flTimer);flTimer=setTimeout(function(){flArm=-1;flRender()},4000);flRender();return}
+    var a=flAll();a.splice(i,1);flStore(a);flArm=-1;flRender();flMsg("Vol supprimé.");
+  }
+});
+var nfArm=false,nfTimer=null;
+$("newFlight").onclick=function(){
+  var b=$("newFlight");
+  if(!nfArm){nfArm=true;b.textContent="Confirmer";b.classList.add("warn");nfTimer=setTimeout(nfReset,4000);return}
+  nfReset();
+  S.pts=[];S.example=false;S.arrFirst=false;S.date=todayStr();S.dep="";S.wd=0;S.ws=0;S.windMan=false;S.windAuto="";
+  S.pf={dep:{},arr:{},margin:(S.pf&&S.pf.margin)||25};S.cl={};S.wa={};S.altn="";S.ck={};WAD=null;
+  syncInputs();renderPoints();refresh();showStep(1);$("rtDep").focus();
+};
+function nfReset(){nfArm=false;clearTimeout(nfTimer);var b=$("newFlight");b.textContent="Nouveau vol";b.classList.remove("warn")}
+
+/* Statut du vol, pastilles des étapes, résumés */
+var DOTG={ok:"✓",warn:"!",bad:"✕",todo:"·"};
+function stGroup(gs){
+  var mx=-1,V=LAST.vd;
+  if(V)V.items.forEach(function(x){if(gs.indexOf(x.g)>=0)mx=Math.max(mx,x.l==="bad"?2:(x.l==="warn"?1:0))});
+  return mx;
+}
+function lvlName(m){return m===2?"bad":(m===1?"warn":"ok")}
+var STNAME=["Vol","Météo","Charge","Performances","Briefing"],STTXT={ok:"tout est bon",warn:"à vérifier",bad:"à régler",todo:"pas encore"};
+function ckLeft(){return CK_MAN.filter(function(x){return !(S.ck&&S.ck[x[0]])}).length}
+function ergoRender(C){
+  var n=S.pts.length,V=LAST.vd,isDA=AIRCRAFT[S.ac].n===DA20,bar=$("vdBar");
+  /* barre de statut */
+  var rt="Aucune route",mt="";
+  if(n>=2){
+    rt=S.pts[0].n+" → "+S.pts[n-1].n+(n>2?" <span class=\"m\">(+"+(n-2)+")</span>":"");
+    mt=Math.round(C.tD)+" NM · "+hm(C.tT)+" · marge "+(C.margin>=0?"+":"")+fr(C.margin.toFixed(1))+" gal";
+  }else if(n===1)rt=S.pts[0].n+" → ?";
+  var pl=V?lvlName(V.lvl):"todo",pt=V?(V.lvl===2?"À régler":(V.lvl===1?"À vérifier":"OK")):"Route à saisir";
+  bar.className="vdbar "+(pl==="todo"?"":pl);
+  bar.innerHTML="<span class=\"r\">"+rt+"</span>"+(mt?"<span class=\"m\">"+esc(mt)+"</span>":"")+"<span class=\"pill "+pl+"\">"+pt+"</span>";
+  /* pastilles des étapes */
+  var st=[];
+  st[1]=n<2?"todo":lvlName(Math.max(stGroup(["route"]),depMin()===null?1:0));
+  var dc=n?wxCodeFor(S.pts[0]):"";
+  st[2]=(n<2||!dc||!WX[dc])?"todo":lvlName(stGroup(["wx","alt","sun"]));
+  st[3]=n<2?"todo":lvlName(Math.max(stGroup(["wb","fuel"]),0));
+  st[4]=(n<2||!isDA)?"todo":lvlName(Math.max(stGroup(["perf"]),0));
+  st[5]=!V?"todo":lvlName(V.lvl);
+  if(V&&V.lvl===0&&ckLeft()>0)st[5]="warn";
+  Array.prototype.forEach.call($("steps").children,function(b){
+    var k=+b.getAttribute("data-s"),dt=b.querySelector(".dot");
+    dt.className="dot "+st[k];dt.textContent=DOTG[st[k]];
+    b.setAttribute("aria-label","Étape "+k+", "+STNAME[k-1]+" : "+STTXT[st[k]]);
+  });
+  /* résumés */
+  $("routeSum").textContent=n>=2?(Math.round(C.tD)+" NM, "+hm(C.tT)+" de vol, route magnétique "+deg(C.legs[0].mc)+" au départ."):"Entre un départ et une arrivée : la météo, la charge et les performances se calculent seules.";
+  var fs="";
+  if(n>=2){
+    fs+=cell("Requis",C.req.toFixed(1)+" gal");fs+=cell("À bord",S.fuel.toFixed(1)+" gal");
+    fs+=cell("Marge",(C.margin>=0?"+":"")+C.margin.toFixed(1)+" gal",C.margin>=0?"ok":"bad");
+    fs+=cell("Autonomie",hm(C.endu));
+  }
+  $("fuelSum").innerHTML=fs;
+  $("fuelNote").textContent=n>=2?("Requis = trajet "+C.trip.toFixed(1)+" gal + roulage et montée "+S.taxi.toFixed(1)+" gal + réserve de "+C.resMin+" min ("+C.res.toFixed(1)+" gal)"+(C.altFuel>0?" + dégagement "+C.alt.code+" ("+C.altFuel.toFixed(1)+" gal)":"")+"."):"";
+  var W=LAST.wb;$("fq_max").disabled=!(isDA&&W&&!W.missing);
+  /* vent */
+  var wl="";
+  if(n>=2){
+    if(WAD&&!(S.wa&&S.wa.on===false)){
+      var parts=[];C.legs.forEach(function(L,i){var w=WAD.legs[i];if(w)parts.push((C.legs.length>1?(i+1)+". ":"")+(w.ws<1?"calme":deg(w.wd)+" / "+Math.round(w.ws)+" kt"))});
+      wl="Vents à "+sp(Math.round(WAD.alt))+" ft (modèle, degrés vrais) : "+parts.join(" ; ")+".";
+    }else if(S.windAuto&&S.windMan!==true&&S.ws>0)wl="Vent de la route : "+deg(S.wd)+" / "+S.ws+" kt, calculé à partir des vents de surface.";
+    else if(S.ws>0)wl="Vent saisi : "+deg(S.wd)+" / "+S.ws+" kt.";
+    else wl="Pas de vent pour l’instant : il se calcule dès que la météo est chargée.";
+  }
+  $("windLine").textContent=wl;
+  var A=LAST.aa,ab="";
+  if(A&&A.best&&A.cur)ab=(A.best===A.cur?"Altitude actuelle ":"Altitude la plus rapide : ")+sp(A.best.a)+" ft, "+hm(A.best.time)+(A.best!==A.cur?" au lieu de "+hm(A.cur.time)+" à "+sp(A.cur.a)+" ft":"")+". Détails ci-dessous.";
+  $("altBest").textContent=ab;
+  ckRender();
+}
+
+/* Liste « Avant de partir » */
+var CK_MAN=[["wx","Briefing météo officiel lu (cartes GFA, SIGMET, AIRMET, PIREP)"],["notam","NOTAM consultés (départ, arrivée, dégagement, route)"],["prevol","Avion : documents, carnet de route et inspection prévol"],["pax","Passagers informés (sécurité, ceintures, issues, urgence)"],["fp","Itinéraire VFR déposé, ou personne désignée avertie"]];
+var CK_AUTO=[["Météo au départ et à l’arrivée",["wx","alt","sun"],2],["Performances sur la piste",["perf"],4],["Masse et centrage",["wb"],3],["Carburant",["fuel"],3]];
+function ckRender(){
+  var V=LAST.vd,isDA=AIRCRAFT[S.ac].n===DA20,h="",f="";
+  if(!S.ck)S.ck={};
+  if(!V){$("ck").innerHTML="<p class=\"note\" style=\"margin-top:0\">Entre un départ et une arrivée à l’étape Vol.</p>";$("ckFinal").innerHTML="";return}
+  CK_AUTO.forEach(function(a){
+    var mx=stGroup(a[1]),na=(!isDA&&(a[1][0]==="perf"||a[1][0]==="wb")),cls=na?"info":(mx<=0?"ok":lvlName(mx));
+    var txt=na?"non calculé pour cet avion":(mx===2?"à régler":(mx===1?"à vérifier":"vérifié par Plan Vol"));
+    h+="<div class=\"vdi\"><span class=\"vdd "+cls+"\"></span><span>"+esc(a[0])+" : "+txt+"</span>"+((mx>0)?"<button class=\"lnk\" type=\"button\" data-go=\""+a[2]+"\">Voir ›</button>":"")+"</div>";
+  });
+  CK_MAN.forEach(function(m){
+    h+="<label class=\"vdi ckm\"><input type=\"checkbox\" data-ck=\""+m[0]+"\""+(S.ck[m[0]]?" checked":"")+"><span>"+esc(m[1])+"</span></label>";
+  });
+  $("ck").innerHTML=h;
+  var left=ckLeft();
+  if(V.lvl===2)f="<div class=\"vdh bad\">À régler avant le départ</div>";
+  else if(V.lvl===1)f="<div class=\"vdh warn\">À vérifier avant le départ</div>";
+  else if(left)f="<div class=\"vdh warn\">Presque prêt : "+left+" vérification"+(left>1?"s":"")+" à cocher</div>";
+  else f="<div class=\"vdh ok\">Prêt à partir</div>";
+  $("ckFinal").innerHTML=f+"<p class=\"note\">Aide à la préparation seulement : la décision de partir revient au commandant de bord.</p>";
+}
+$("ck").addEventListener("change",function(e){
+  var c=e.target.closest("input[data-ck]");if(!c)return;
+  if(!S.ck)S.ck={};S.ck[c.getAttribute("data-ck")]=c.checked;save();ckRender();ergoRender(compute());
+});
+document.addEventListener("click",function(e){
+  var b=e.target.closest("button[data-go]");if(b)showStep(+b.getAttribute("data-go"));
+});
+
 function fmtMin(m){return m==null?"--":clock(m)}
 function updateResUi(C){
   var RI=C.RI,msg="",nn="";
@@ -3123,7 +3510,7 @@ function refresh(){
   else if(tsig!==lastTimeSig){lastTimeSig=tsig;scheduleWa()}
   var C=compute();
   updateResUi(C);
-  renderSummary(C);renderLegs(C);renderLegWinds(C);drawRoute(C);pfRender(C);clRender(C);buildVerdict(C);featRender(C);buildPrint(C);save();
+  renderSummary(C);renderLegs(C);renderLegWinds(C);drawRoute(C);pfRender(C);clRender(C);buildVerdict(C);featRender(C);ergoRender(C);buildPrint(C);save();
   var wsig=S.date+"|"+S.dep+"|"+Math.round(C.tT*60);
   if(WXLIST&&wsig!==lastWsig){lastWsig=wsig;renderWx(WXLIST)}
   var sg=wxStations().join(",")+"|"+pfCode("dep")+"|"+pfCode("arr")+"|"+(S.altn||"");
@@ -3137,6 +3524,7 @@ if(!S.cl)S.cl={};
 if(!S.wa)S.wa={};
 if(!S.pm)S.pm={};
 if(!S.fp)S.fp={};
+if(!S.ck)S.ck={};
 buildPfUi();
 syncInputs();renderPoints();refresh();drawApts();drawGrid();
 showStep(1);
